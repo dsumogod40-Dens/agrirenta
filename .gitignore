@@ -1,0 +1,19 @@
+.DS_Store
+Thumbs.db
+node_modules/
+*.log
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Local database files
+*.db
+*.sqlite
+*.sqlite3
+
+# Windows and Mac files
+Thumbs.db
+.DS_Store

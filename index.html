@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AgriRenta | Bringing Farm Equipment Closer to You</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="body">
+
+  <!-- NAVIGATION -->
+  <header class="nav">
+    <button class="nav-toggle" id="navToggle" aria-label="Menu" aria-expanded="false">☰</button>
+
+    <nav class="nav-links" id="navLinks">
+      <a href="#about">About Us</a>
+      <a href="#solution">Solution</a>
+      <a href="#how">How it works</a>
+      <a href="#equipment">Equipment</a>
+    </nav>
+  </header>
+
+  <main>
+
+    <!-- HERO WITH AUTOMATIC IMAGE SLIDESHOW -->
+    <section id="home" class="hero">
+
+      <!-- ===== HERO BACKGROUND VIDEO (loops) =====
+           DIRI IBUTANG ANG NAME SA VIDEO: usba ang src kung lain ang filename -->
+      <video class="hero-video" id="heroVideo" autoplay muted loop  playsinline preload="auto"
+             poster="images/harves.png" src="background%20video%20for%20firstpage.mp4"></video>
+
+      <!-- LOGO (first page only) -->
+      <a href="#home" class="logo-badge" aria-label="AgriRenta">
+        <img src="logo.png" alt="AgriRenta logo">
+      </a>
+
+      <!-- DARK OVERLAY -->
+      <div class="hero-shade"></div>
+
+      <!-- HERO TEXT -->
+      <div class="hero-inner">
+        <p class="school">
+          ADSSU · College of Computing and Information Sciences
+        </p>
+
+        <h1>
+          Bringing Farm<br>
+          Equipment Closer<br>
+          to You.
+        </h1>
+
+        <p class="lead">Smart mechanization for every farm.</p>
+
+        <div class="cta-row">
+          <a class="btn btn-ghost" href="login.html">Log in</a>
+          <a class="btn btn-white" href="#equipment">Browse equipment</a>
+        </div>
+
+        <div class="contact-row" aria-label="Contact AgriRenta">
+          <a class="contact-ico" href="mailto:agrirentaofficial@gmail.com" aria-label="Email AgriRenta" title="agrirentaofficial@gmail.com">
+            <img src="images/emailpicture.png" alt="Email">
+          </a>
+          <a class="contact-ico" href="https://www.facebook.com/profile.php?id=61595097656128" target="_blank" rel="noopener noreferrer" aria-label="AgriRenta on Facebook" title="AgriRenta on Facebook">
+            <img src="images/facebookpicture.png" alt="Facebook">
+          </a>
+        </div>
+
+        <!-- TRUST BADGE: usba ang text ug rating sa tinuod nga numero kung naa na -->
+        <div class="trust">
+          <div class="trust-avatars" aria-hidden="true">
+            <span class="av"><img src="images/profile1.png" alt="" onerror="this.remove()"></span>
+            <span class="av"><img src="images/profile2.jpg" alt="" onerror="this.remove()"></span>
+            <span class="av"><img src="images/profile3.jpg" alt="" onerror="this.remove()"></span>
+          </div>
+          <div class="trust-text">
+            <p class="trust-line">Trusted by local farmers in Bunawan</p>
+            <p class="stars" aria-label="4.8 out of 5 stars"><span class="star-row">★★★★★</span> <span class="star-num">4.8/5</span></p>
+          </div>
+        </div>
+      </div>
+
+      <p class="scroll-hint">Scroll to explore</p>
+
+    </section>
+
+    <!-- ABOUT US AND PROBLEMS -->
+    <section id="about" class="section">
+
+      <div class="section-head">
+        <h2>About AgriRenta</h2>
+
+        <p>
+          AgriRenta is a digital platform where equipment owners list
+          agricultural machines for rent, and farmers search, check
+          availability and send a booking request. It was built by
+          BSIT students of ADSSU.
+        </p>
+
+        <h3 class="sub">The problem we are solving</h3>
+      </div>
+
+      <div class="grid grid-4">
+
+        <article class="glass">
+          <h3>Expensive equipment</h3>
+          <p>
+            Tractors, tillers and pumps cost too much for small farmers
+            to buy.
+          </p>
+        </article>
+
+        <article class="glass">
+          <h3>Limited use, hard to find</h3>
+          <p>
+            Some machines are needed only in certain seasons, and
+            farmers rely on word of mouth to find one for rent.
+          </p>
+        </article>
+
+        <article class="glass">
+          <h3>No price transparency</h3>
+          <p>
+            Comparing rental prices, availability and terms is difficult.
+          </p>
+        </article>
+
+        <article class="glass">
+          <h3>Inconvenient process</h3>
+          <p>
+            Farmers contact several owners by call or text to check
+            schedules and prices.
+          </p>
+        </article>
+
+      </div>
+
+      <div class="glass big about-launch">
+        <h3>Starting in Bunawan, Agusan del Sur</h3>
+
+        <p>
+          AgriRenta launches first with local farmers and equipment
+          owners in Bunawan, then expands to other farming communities.
+          Farmers rent only when they need a machine, and owners reach
+          more renters. We will improve the platform based on real user
+          feedback.
+        </p>
+      </div>
+
+    </section>
+
+    <!-- SOLUTION -->
+    <section id="solution" class="section">
+
+      <div class="section-head">
+        <h2>One platform for renting farm equipment</h2>
+
+        <p>
+          Owners list their machines. Farmers search, check availability
+          and send a booking request.
+        </p>
+      </div>
+
+      <div class="grid grid-3">
+
+        <article class="glass">
+          <h3>For farmers</h3>
+          <ul>
+            <li>Search by type, location, price and date</li>
+            <li>See owner ratings and reviews</li>
+            <li>Check that owners are verified</li>
+          </ul>
+        </article>
+
+        <article class="glass glass-wide">
+          <h3>For owners</h3>
+          <ul>
+            <li>List equipment and set rental prices</li>
+            <li>Manage available dates</li>
+            <li>See each farmer's verification status, rating and reviews</li>
+          </ul>
+        </article>
+
+        <article class="glass">
+          <h3>For both</h3>
+          <ul>
+            <li>One place for the whole rental process</li>
+            <li>Notifications for requests, confirmations and upcoming rentals</li>
+          </ul>
+        </article>
+
+      </div>
+
+    </section>
+
+    <!-- HOW IT WORKS -->
+    <section id="how" class="how">
+      <div class="how-sticky">
+        <div class="section-head how-head">
+          <h2>How it works</h2>
+          <p>From search to confirmed booking in four steps.</p>
+        </div>
+        <ol class="steps" id="stepsTrack">
+        <li class="step glass">
+          <h3><span class="step-n">1</span>Search</h3>
+          <p>Filter by equipment type, barangay, price and date.</p>
+          <!-- STEP 1 VIDEO: usba ang src kung lain ang filename -->
+          <div class="step-video">
+            <video muted loop playsinline preload="metadata" src="search%20.mp4#t=0.1" style="--pos:center 30%"></video>
+            <span class="play-badge" aria-hidden="true">▶</span>
+          </div>
+        </li>
+        <li class="step glass">
+          <h3><span class="step-n">2</span>Check availability</h3>
+          <p>View the owner's calendar, rate per day and reviews.</p>
+          <!-- STEP 2 VIDEO: usba ang src kung lain ang filename -->
+          <div class="step-video">
+            <video muted loop playsinline preload="metadata" src="checkavailability.mp4#t=0.1" style="--pos:center 30%"></video>
+            <span class="play-badge" aria-hidden="true">▶</span>
+          </div>
+        </li>
+        <li class="step glass">
+          <h3><span class="step-n">3</span>Send a request</h3>
+          <p>Pick your dates and send the booking request.</p>
+          <!-- STEP 3 VIDEO: usba ang src kung lain ang filename -->
+          <div class="step-video">
+            <video muted loop playsinline preload="metadata" src="send%20request%20ni%20pre.mp4#t=0.1" style="--pos:55% center"></video>
+            <span class="play-badge" aria-hidden="true">▶</span>
+          </div>
+        </li>
+        <li class="step glass">
+          <h3><span class="step-n">4</span>Get confirmed</h3>
+          <p>The owner accepts, and you get a notification.</p>
+          <!-- STEP 4 VIDEO: usba ang src kung lain ang filename -->
+          <div class="step-video">
+            <video muted loop playsinline preload="metadata" src="get%20confirm%20notification%20ni%20.mp4#t=0.1" style="--pos:center 30%"></video>
+            <span class="play-badge" aria-hidden="true">▶</span>
+          </div>
+        </li>
+        </ol>
+        <p class="how-hint">Scroll or swipe to see the steps → </p>
+      </div>
+    </section>
+
+    <!-- EQUIPMENT (scrolls sideways, same as How it works) -->
+    <section id="equipment" class="how eq-how">
+      <div class="how-sticky">
+
+        <div class="section-head how-head">
+          <h2>Equipment you can rent</h2>
+          <p>Sample listings. Prices are set by each owner. Open any machine to see details and availability. You only log in when you book.</p>
+        </div>
+
+        <div class="eq-tools how-head">
+          <input type="search" id="eqSearch" placeholder="Search equipment" aria-label="Search equipment">
+          <div class="chips" id="eqChips"></div>
+        </div>
+
+        <div class="steps eq-track" id="equipmentGrid"></div>
+        <p class="eq-empty how-head" id="eqEmpty" hidden>No equipment matches your search. Try another word or type.</p>
+
+        <p class="how-hint">Scroll or swipe to see more equipment →</p>
+      </div>
+    </section>
+
+    <!-- BUSINESS MODEL -->
+    <section id="model" class="section">
+
+      <div class="section-head">
+        <h2>How AgriRenta earns</h2>
+      </div>
+
+      <div class="grid grid-3">
+
+        <article class="glass">
+          <div class="big-num">10%</div>
+          <h3>Commission</h3>
+          <p>A small percentage of each completed rental.</p>
+        </article>
+
+        <article class="glass">
+          <h3>Featured listings</h3>
+          <p>Owners can pay to make their listing more visible.</p>
+        </article>
+
+        <article class="glass">
+          <h3>Business accounts</h3>
+          <p>
+            Optional paid tools for cooperatives and businesses managing
+            several machines.
+          </p>
+        </article>
+
+      </div>
+
+    </section>
+
+    <!-- ===== OUR TEAM (idugang human sa </section> sa #model, atubangan sa </main>) ===== -->
+    <section id="team" class="tm-section" aria-label="Our team">
+      <div class="tm-sky" aria-hidden="true">
+        <span class="tm-star" style="--t:6%;--l:8%;--d:0s;--dur:4.5s;--len:160px"></span>
+        <span class="tm-star" style="--t:22%;--l:-5%;--d:1.6s;--dur:5s;--len:120px"></span>
+        <span class="tm-star" style="--t:2%;--l:42%;--d:3.1s;--dur:4s;--len:180px"></span>
+        <span class="tm-star" style="--t:38%;--l:20%;--d:4.4s;--dur:5.5s;--len:140px"></span>
+        <span class="tm-star" style="--t:12%;--l:68%;--d:2.2s;--dur:4.8s;--len:170px"></span>
+        <span class="tm-star" style="--t:55%;--l:5%;--d:5.6s;--dur:4.2s;--len:130px"></span>
+        <span class="tm-star" style="--t:8%;--l:88%;--d:.8s;--dur:5.2s;--len:150px"></span>
+        <span class="tm-star" style="--t:62%;--l:50%;--d:6.8s;--dur:4.6s;--len:160px"></span>
+        <span class="tm-twinkle" style="--t:15%;--l:12%;--d:0s"></span>
+        <span class="tm-twinkle" style="--t:30%;--l:78%;--d:.5s"></span>
+        <span class="tm-twinkle" style="--t:48%;--l:30%;--d:1s"></span>
+        <span class="tm-twinkle" style="--t:75%;--l:15%;--d:1.5s"></span>
+        <span class="tm-twinkle" style="--t:82%;--l:62%;--d:2s"></span>
+        <span class="tm-twinkle" style="--t:25%;--l:48%;--d:2.5s"></span>
+        <span class="tm-twinkle" style="--t:90%;--l:88%;--d:3s"></span>
+        <span class="tm-twinkle" style="--t:58%;--l:93%;--d:3.5s"></span>
+      </div>
+
+      <div class="tm-wrap">
+        <header class="tm-heading">
+          <h2>OUR TEAM</h2>
+          <p>The BSIT students of ADSSU behind AgriRenta. Different strengths, one shared vision: bringing farm equipment closer to you.</p>
+        </header>
+
+        <div class="tm-grid">
+          <article class="tm-card" style="--delay:.1s">
+            <div class="tm-portrait" data-initials="RA">
+              <img src="images/romy.jpg" alt="Portrait of Romy John L. Astronomo" onerror="this.remove()">
+              <span class="tm-number"></span>
+            </div>
+            <div class="tm-info"><h3>Romy John L. Astronomo</h3><p>Project Lead</p></div>
+          </article>
+
+          <article class="tm-card" style="--delay:.25s">
+            <div class="tm-portrait" data-initials="DS">
+              <img src="images/dennis.jpg" alt="Portrait of Dennis Sumogod" onerror="this.remove()">
+              <span class="tm-number"></span>
+            </div>
+            <div class="tm-info"><h3>Dennis Sumogod</h3><p>System Developer</p></div>
+          </article>
+
+          <article class="tm-card" style="--delay:.4s">
+            <div class="tm-portrait" data-initials="FV">
+              <img src="images/faith.jpg" alt="Portrait of Faith Grace S. Visto" onerror="this.remove()">
+              <span class="tm-number"></span>
+            </div>
+            <div class="tm-info"><h3>Faith Grace S. Visto</h3><p>Operations &amp; Customer Support Officer</p></div>
+          </article>
+
+          <article class="tm-card" style="--delay:.55s">
+            <div class="tm-portrait" data-initials="KR">
+              <img src="images/kimberly.jpg" alt="Portrait of Kimberly R. Rafisura" onerror="this.remove()">
+              <span class="tm-number"></span>
+            </div>
+            <div class="tm-info"><h3>Kimberly R. Rafisura</h3><p>UI/UX Designer &amp; Frontend Designer</p></div>
+          </article>
+
+          <article class="tm-card" style="--delay:.7s">
+            <div class="tm-portrait" data-initials="GF">
+              <img src="images/greg.jpg" alt="Portrait of Greg Fernan Jean G. Fuentes" onerror="this.remove()">
+              <span class="tm-number"></span>
+            </div>
+            <div class="tm-info"><h3>Greg Fernan Jean G. Fuentes</h3><p>Marketing &amp; Business Officer</p></div>
+          </article>
+        </div>
+
+        <div class="tm-footer"><div class="tm-brand">AGRI<span>RENTA</span> · ADSSU BSIT</div></div>
+      </div>
+    </section>
+
+
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer" id="footer">
+    <div class="footer-inner">
+      <img class="footer-logo" src="logo.png" alt="AgriRenta logo">
+      <div class="footer-info">
+        <p class="footer-tag">Bringing Farm Equipment Closer to You.</p>
+        <p>Launching in Bunawan, Agusan del Sur</p>
+        <p>Agusan del Sur State University · College of Computing and Information Sciences</p>
+        <div class="contact-row" aria-label="Contact AgriRenta">
+        <a class="contact-ico" href="mailto:agrirentaofficial@gmail.com" aria-label="Email AgriRenta" title="agrirentaofficial@gmail.com">
+          <img src="images/emailpicture.png" alt="Email">
+        </a>
+        <a class="contact-ico" href="https://www.facebook.com/profile.php?id=61595097656128" target="_blank" rel="noopener noreferrer" aria-label="AgriRenta on Facebook" title="AgriRenta on Facebook">
+          <img src="images/facebookpicture.png" alt="Facebook">
+        </a>
+        </div>
+      </div>
+      <nav class="footer-links" aria-label="Footer">
+        <a href="#about">About Us</a>
+        <a href="#solution">Solution</a>
+        <a href="#how">How it works</a>
+        <a href="#equipment">Equipment</a>
+        <a href="login.html">Log in</a>
+      </nav>
+    </div>
+    <p class="copy">© 2026 AgriRenta · Built by BSIT students of ADSSU</p>
+  </footer>
+
+  <!-- EQUIPMENT DETAILS (opens when a card is clicked) -->
+  <dialog id="eqModal" class="modal" aria-label="Equipment details">
+    <div class="modal-body" id="eqModalBody"></div>
+  </dialog>
+
+  <script src="script.js"></script>
+
+</body>
+</html>
