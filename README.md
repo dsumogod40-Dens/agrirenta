@@ -20,7 +20,7 @@ supabase/functions/api/index.ts   Edge Function code (paste in Supabase dashboar
 | Customer | maria@example.com |
 | Customer | pedro@example.com |
 | Equipment owner | juan@example.com |
-| Admin | ops@agrirenta.example (2FA code: `123456`) |
+| Admin | ops@agrirenta.example |
 
 The sample owners/customers (`owner.demo01@example.com` ... `customer.demo08@example.com`),
 105 equipment listings, 27 reviews and 64 messages are created automatically the first time the site is opened.
@@ -53,4 +53,4 @@ Never put the `service_role` / `secret` key in any file of this repository.
 
 The "Continue with Google" button is on both the Log in and Create account pages.
 After a person's first Google sign-in, AgriRenta asks them to pick **Customer** or **Equipment owner** (once only).
-Admin accounts can only sign in with email + password + 2FA code.
+Admin accounts sign in with email and password. Use a unique, strong password for the admin account; removing the extra code reduces account security.
