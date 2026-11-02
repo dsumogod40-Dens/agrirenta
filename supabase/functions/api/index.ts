@@ -10,8 +10,7 @@ const supabase = createClient(
   { auth: { persistSession: false, autoRefreshToken: false } },
 );
 
-// Optional secrets (Edge Functions > Secrets). Defaults match the old demo setup.
-const ADMIN_2FA_CODE = Deno.env.get("ADMIN_2FA_CODE") || "123456";
+// Optional secret (Edge Functions > Secrets). Defaults match the old demo setup.
 const DEMO_PASSWORD = Deno.env.get("DEMO_PASSWORD") || "demo1234";
 // Only these demo accounts are created automatically on the first visit (bootstrap).
 const DEMO_ACCOUNTS = {
@@ -78,7 +77,7 @@ async function currentUser(req) {
     return null;
   }
   if (!["customer", "owner", "admin"].includes(role)) return null;
-  // Admins must use email + password + 2FA code. A Google session can never act as admin.
+  // A Google session can never act as admin.
   if (role === "admin" && tokenUsedOAuth(token)) return null;
   return {
     id: authUser.id, email: String(authUser.email).toLowerCase(), role,
@@ -452,12 +451,6 @@ async function handlePutState(req) {
 
 async function handleLoginCheck(req) {
   const user = requireUser(await currentUser(req));
-  const body = await req.json().catch(() => ({}));
-  const code = String(body?.code || "");
-  if (user.role === "admin") {
-    if (!code) throw new HttpError(401, "Admin 2FA code required.");
-    if (code !== ADMIN_2FA_CODE) throw new HttpError(401, "Admin accounts need the configured 2FA code.");
-  }
   return send(200, { ok: true, user: { email: user.email, role: user.role } });
 }
 
