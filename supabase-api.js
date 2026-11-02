@@ -53,7 +53,7 @@
         const limited = /rate|too many/i.test(error.message || "");
         return reply(limited ? 429 : 401, { ok: false, error: limited ? "Too many login attempts. Please wait a few minutes and try again." : "Wrong email or password." });
       }
-      const response = await callFunction("POST", "/login-check", { code: body.code });
+      const response = await callFunction("POST", "/login-check");
       const result = await response.clone().json().catch(() => ({}));
       if (!response.ok || !result.ok) {
         await sb.auth.signOut({ scope: "local" }).catch(() => {});
