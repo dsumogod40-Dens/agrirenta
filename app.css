@@ -456,3 +456,116 @@ img { max-width:100%; }
   .side .nav{gap:0}
   .side .nav a{font-size:.52rem;padding-inline:0}
 }
+
+
+/* ===== FIX: Admin Users mobile responsive cards ===== */
+
+.admin-user-card {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  min-width: 0;
+  width: 100%;
+  flex-wrap: nowrap;
+}
+
+.admin-user-card .messenger-avatar-link {
+  flex: 0 0 44px;
+  width: 44px;
+}
+
+.admin-user-card .admin-user-profile {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.admin-user-card .admin-user-profile b {
+  display: block;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.admin-user-card .admin-user-profile p {
+  margin: .2rem 0 0;
+  font-size: .85rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.admin-user-card .pill {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.admin-user-card .btn {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .admin-user-card {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: .65rem;
+    padding: .9rem;
+    align-items: center;
+  }
+
+  .admin-user-card .messenger-avatar-link {
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .admin-user-card .admin-user-profile {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .admin-user-card .pill {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: start;
+    max-width: 100%;
+  }
+
+  .admin-user-card .btn {
+    width: 100%;
+    min-width: 0;
+    padding: .65rem .5rem;
+    font-size: .82rem;
+    white-space: normal;
+  }
+
+  .admin-user-card .btn:first-of-type {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .admin-user-card .btn:last-of-type {
+    grid-column: 2;
+    grid-row: 3;
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
