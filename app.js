@@ -618,7 +618,7 @@ const V = {
 
   login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">System Status: Under Maintenance
 
-Please be informed that the AgriRenta System is currently undergoing maintenance and further development under the supervision of Dennis Sumogod – Programmer of AgriRenta.
+Please be informed that the AgriRenta System is currently undergoing maintenance and further development under the supervision of <b>Dennis Sumogod – Programmer</b> of AgriRenta.<br>
 
 The system is still being improved to ensure better performance, reliability, security, and a smooth user experience..</p>
     <form data-form="login"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
