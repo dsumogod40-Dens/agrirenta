@@ -1,4 +1,4 @@
-/* AgriRenta web app (demo). Data is saved in localStorage for now.
+   /* AgriRenta web app (demo). Data is saved in localStorage for now.
    When we move to React + Supabase, the db object below becomes Supabase tables. */
 
 /* ---------- Data ---------- */
@@ -616,7 +616,11 @@ const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
 
-  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">Log in to continue your farming journey.</p>
+  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">System Status: Under Maintenance
+
+Please be informed that the AgriRenta System is currently undergoing maintenance and further development under the supervision of Dennis Sumogod – Programmer of AgriRenta.
+
+The system is still being improved to ensure better performance, reliability, security, and a smooth user experience..</p>
     <form data-form="login"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
     <label>Password</label><input name="pw" type="password" placeholder="Enter your password" required>
     <p style="text-align:right;margin:.5rem 0 0"><a href="#" data-act="forgot"><b>Forgot password?</b></a></p>
