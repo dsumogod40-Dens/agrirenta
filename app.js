@@ -1,4 +1,4 @@
-   /* AgriRenta web app (demo). Data is saved in localStorage for now.
+/* AgriRenta web app (demo). Data is saved in localStorage for now.
    When we move to React + Supabase, the db object below becomes Supabase tables. */
 
 /* ---------- Data ---------- */
