@@ -376,6 +376,7 @@ img { max-width:100%; }
 .cashout-panel{margin-top:1.2rem;scroll-margin-top:1rem}
 .cashout-panel form{max-width:760px}
 .commission-panel{margin-top:1.2rem;scroll-margin-top:1rem}
+.commission-nav{display:flex;flex-wrap:wrap;gap:.55rem;margin:1rem 0}
 .commission-record{align-items:flex-start;min-width:0}
 .commission-record>div{min-width:0;overflow-wrap:anywhere}
 .commission-record-owner{display:flex;align-items:center;gap:.7rem;margin-bottom:.65rem}
