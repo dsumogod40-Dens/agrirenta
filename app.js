@@ -9,9 +9,16 @@ const IMG = {
 };
 const CATS = ["All types", "Tractors", "Harvesters", "Tillers", "Harvesting tools", "Post-harvest", "Hand tools", "Powered tools", "Livestock", "Aquaculture", "Safety gear", "Transport", "Others"];
 const LOCATIONS = ["Bunawan Brook, Bunawan, Agusan del Sur","Consuelo, Bunawan, Agusan del Sur","Imelda, Bunawan, Agusan del Sur","Libertad, Bunawan, Agusan del Sur","Mambalili, Bunawan, Agusan del Sur","Nueva Era, Bunawan, Agusan del Sur","Poblacion, Bunawan, Agusan del Sur","San Andres, Bunawan, Agusan del Sur","San Marcos, Bunawan, Agusan del Sur","San Teodoro, Bunawan, Agusan del Sur"];
-const ROLE_LABEL = {customer:"Customer", owner:"Equipment Owner", admin:"Admin"};
+const ROLE_LABEL = {customer:"Customer", owner:"Equipment Owner", admin:"Administrator"};
 const categoryImage = {Tractors:IMG.tractor, Harvesters:IMG.harvester, Tillers:IMG.tiller, Others:IMG.pump};
 const J = "juan@example.com", ALEX = "alex.santos@example.com";
+const LOCAL_DEMO_PASSWORD_HASHES = {
+  "alex.santos@example.com":"pbkdf2$120000$Tc4iksfAAx4LND0+VE9CbA==$unbKnLF23Kd/kzkjvhG3OKSsnrorcICT95p7H+RsZ50=",
+  "maria@example.com":"pbkdf2$120000$czNhWzITZDiMJU4U2SjGYg==$h1X4a70IPgNqs9QoKwUnDZtSkY3SSPaeO6spkdL0BwU=",
+  "pedro@example.com":"pbkdf2$120000$moV2yhb/Pv7/38yPQ8Xpow==$qPuF3MK/0VIWMw3IoLtH2bPwi4bT0n2UPnTkghdxuY0=",
+  "juan@example.com":"pbkdf2$120000$yF8QVQ9EtesjdW5voooKMQ==$8ze7Pm1ETaYv3FotN9o0gh8qGyONx0BA8AHAeKMVkm8=",
+  "ops@agrirenta.example":"pbkdf2$120000$YD2Tm6JTB3jynEi07stvNg==$HQ4GMLUrGqvja1oGOmsMWUDiiz24B2K4YPaRUKtVJZw="
+};
 const eq = (id, name, spec, cat, img, price, rating, n) => ({ id, name, spec, cat, img, price, rating, n, owner: J });
 const SAMPLE_OWNERS = [
   "owner.demo01@example.com", "owner.demo02@example.com", "owner.demo03@example.com", "owner.demo04@example.com",
@@ -388,11 +395,11 @@ const SEED = {
     eq(5, "Rotary Tiller", "Tractor mounted", "Tillers", "rotary", 600, 4.8, 40), eq(6, "Water Pump", "3 inch · Gasoline", "Others", "pump", 500, 4.7, 31),
     eq(7, "Thresher", "Rice thresher", "Harvesters", "thresher", 1200, 4.5, 22), eq(8, "Power Sprayer", "Knapsack · 16 L", "Others", "sprayer", 300, 4.6, 18)],
   users: [
-    { email: ALEX, name: "Alex Santos", role: "customer", phone: "0917 000 4821", pw: "demo1234", v: { mobile: 1, email: 1, id: "review", selfie: "review" } },
-    { email: "maria@example.com", name: "Maria Dela Cruz", role: "customer", phone: "0917 111 2233", pw: "demo1234", v: { mobile: 1, email: 1, id: "ok", selfie: "ok" } },
-    { email: "pedro@example.com", name: "Pedro Reyes", role: "customer", phone: "0917 222 3344", pw: "demo1234", v: { mobile: 1, email: 1, id: "ok", selfie: "ok" } },
-    { email: J, name: "Juan's Farm Equipment", role: "owner", phone: "0918 000 2210", pw: "demo1234", v: { mobile: 1, email: 1, id: "ok", selfie: "ok", papers: "review" } },
-    { email: "ops@agrirenta.example", name: "AgriRenta Ops", role: "admin", phone: "", pw: "demo1234", v: {} }],
+    { email: ALEX, name: "Alex Santos", role: "customer", phone: "0917 000 4821", pwHash: LOCAL_DEMO_PASSWORD_HASHES[ALEX], v: { mobile: 1, email: 1, id: "review", selfie: "review" } },
+    { email: "maria@example.com", name: "Maria Dela Cruz", role: "customer", phone: "0917 111 2233", pwHash: LOCAL_DEMO_PASSWORD_HASHES["maria@example.com"], v: { mobile: 1, email: 1, id: "ok", selfie: "ok" } },
+    { email: "pedro@example.com", name: "Pedro Reyes", role: "customer", phone: "0917 222 3344", pwHash: LOCAL_DEMO_PASSWORD_HASHES["pedro@example.com"], v: { mobile: 1, email: 1, id: "ok", selfie: "ok" } },
+    { email: J, name: "Juan's Farm Equipment", role: "owner", phone: "0918 000 2210", pwHash: LOCAL_DEMO_PASSWORD_HASHES[J], v: { mobile: 1, email: 1, id: "ok", selfie: "ok", papers: "review" } },
+    { email: "ops@agrirenta.example", name: "AgriRenta Ops", role: "admin", phone: "", pwHash: LOCAL_DEMO_PASSWORD_HASHES["ops@agrirenta.example"], v: {} }],
   bookings: [
     { ref: "AR-2026-0103", eq: 3, renter: ALEX, owner: J, start: "2026-09-08", end: "2026-09-09", days: 1, total: 900, status: "returned", delivery: "Pickup", addr: "" },
     { ref: "AR-2026-0148", eq: 1, renter: "maria@example.com", owner: J, start: "2026-10-20", end: "2026-10-21", days: 1, total: 2500, status: "pending", delivery: "Delivery", addr: "Bunawan" },
@@ -480,6 +487,11 @@ db.withdrawals = Array.isArray(db.withdrawals) ? db.withdrawals : [];
 db.messages = Array.isArray(db.messages) ? db.messages : [];
 db.notificationReads = db.notificationReads && typeof db.notificationReads === "object" ? db.notificationReads : {};
 db.commissionWithdrawals = Array.isArray(db.commissionWithdrawals) ? db.commissionWithdrawals : [];
+db.commissionRecords = Array.isArray(db.commissionRecords) ? db.commissionRecords : [];
+db.commissionPayments = Array.isArray(db.commissionPayments) ? db.commissionPayments : [];
+db.commissionSettings = db.commissionSettings && typeof db.commissionSettings === "object"
+  ? { paymentInstructions:"", gracePeriodDays:7, ...db.commissionSettings }
+  : { paymentInstructions:"", gracePeriodDays:7 };
 let demoCatalogChanged = mergeSampleCatalog(db);
 if (demoCatalogChanged) {
   try { localStorage.setItem("agri", JSON.stringify(db)); }
@@ -497,10 +509,46 @@ const normalizeState = (state) => {
   db.messages = Array.isArray(db.messages) ? db.messages : [];
   db.notificationReads = db.notificationReads && typeof db.notificationReads === "object" ? db.notificationReads : {};
   db.commissionWithdrawals = Array.isArray(db.commissionWithdrawals) ? db.commissionWithdrawals : [];
+  db.commissionRecords = Array.isArray(db.commissionRecords) ? db.commissionRecords : [];
+  db.commissionPayments = Array.isArray(db.commissionPayments) ? db.commissionPayments : [];
+  db.commissionSettings = db.commissionSettings && typeof db.commissionSettings === "object"
+    ? { paymentInstructions:"", gracePeriodDays:7, ...db.commissionSettings }
+    : { paymentInstructions:"", gracePeriodDays:7 };
   const catalogChanged = mergeSampleCatalog(db);
   db.eq.forEach(e => { if (typeof e.location !== "string") e.location = ""; });
   db.users.forEach(user => { if (typeof user.avatar !== "string") user.avatar = ""; });
   return catalogChanged;
+};
+const applyApiState = (state) => {
+  if (!state || typeof state !== "object") throw new Error("The server did not return updated AgriRenta data.");
+  normalizeState(state);
+  db.me = state.me || db.me;
+};
+const applyMediaMigrationUpdates = (updates) => {
+  for (const update of updates || []) {
+    if (update.section === "users") {
+      const user = db.users.find((item) => item.email === update.recordKey);
+      if (!user) continue;
+      if (update.field === "avatar") user.avatar = update.reference;
+      else {
+        const match = /^idDocs\.(front|back|selfie)$/.exec(update.field);
+        if (match && user.idDocs) user.idDocs[match[1]] = update.reference;
+      }
+      continue;
+    }
+    if (update.section === "eq") {
+      const item = db.eq.find((record) => String(record.id) === String(update.recordKey));
+      if (!item) continue;
+      if (update.field === "img") item.img = update.reference;
+      else if (update.field === "orcr.data" || update.field === "permit.data") {
+        const [document] = update.field.split(".");
+        if (item[document]) item[document].data = update.reference;
+      } else {
+        const match = /^photos\.(\d+)\.data$/.exec(update.field);
+        if (match && item.photos?.[Number(match[1])]) item.photos[Number(match[1])].data = update.reference;
+      }
+    }
+  }
 };
 db.eq.forEach((e) => { if (typeof e.location !== "string") e.location = ""; });
 db.users.forEach(u => { if (typeof u.avatar !== "string") u.avatar = ""; });
@@ -515,6 +563,7 @@ const readPendingState = () => {
   }
 };
 let serverApiEnabled = false;
+let serverApiChecked = false;
 let rolePending = false; // true right after a first Google sign-in, until the person picks Customer or Equipment owner
 const persistState = async () => {
   const snapshot = JSON.stringify(db);
@@ -543,11 +592,84 @@ const save = () => persistState().then(() => true).catch(err => {
 /* ---------- Helpers ---------- */
 const $ = (s) => document.querySelector(s), app = $("#app");
 const peso = (n) => "₱" + Number(n).toLocaleString();
-const img = (k) => typeof k === "string" && (k.startsWith("data:image/") || k.startsWith("https://") || k.startsWith("http://") || k.startsWith("images/")) ? k : encodeURI(IMG[k] || IMG.tractor);
+const commissionRemaining = (record) => Math.max(0, Number(record.amount || 0) - Number(record.paidAmount || 0));
+const commissionEligibleBooking = (booking) => booking.status === "returned"
+  && (booking.paymentStatus === "paid"
+    || (booking.pay === "GCash" && booking.paymentStatus === "demo_completed"))
+  && ["Cash on Delivery (COD)", "GCash"].includes(booking.pay)
+  && booking.disputed !== true
+  && booking.paymentDisputed !== true
+  && Number.isFinite(Number(booking.total))
+  && Number(booking.total) > 0;
+const commissionHasSimulationPayment = (record) => db.commissionPayments.some(payment =>
+  payment.bookingRef === record.bookingRef && payment.source === "demo");
+const commissionDisplayStatus = (record) => {
+  if (record.status === "disputed") return "Disputed";
+  if (record.status === "waived") return "Waived";
+  if (commissionRemaining(record) < 0.005) return commissionHasSimulationPayment(record) ? "Settled (simulation)" : "Paid";
+  return Number.isFinite(Date.parse(record.dueAt)) && Date.now() > Date.parse(record.dueAt) ? "Overdue" : "Unpaid";
+};
+const ownerCommissionRestricted = (owner) => db.commissionRecords.some((record) =>
+  record.owner === owner && !["disputed", "waived"].includes(record.status)
+    && commissionRemaining(record) >= 0.005
+    && Number.isFinite(Date.parse(record.dueAt)) && Date.now() > Date.parse(record.dueAt)
+);
+const OWNER_COMPLETION_GRACE_MS = 24 * 60 * 60 * 1000;
+const bookingEndTimestamp = (booking) => /^\d{4}-\d{2}-\d{2}$/.test(String(booking.end || ""))
+  ? Date.parse(`${booking.end}T00:00:00+08:00`)
+  : NaN;
+const isOwnerCompletionPending = (booking) => booking.status === "approved"
+  || (booking.status === "returned" && ["Cash on Delivery (COD)", "GCash"].includes(booking.pay)
+    && booking.paymentStatus !== "paid"
+    && !(booking.pay === "GCash" && booking.paymentStatus === "demo_completed"));
+const ownerCompletionDeadline = (booking) => {
+  if (!isOwnerCompletionPending(booking)) return NaN;
+  const endTime = bookingEndTimestamp(booking);
+  const returnedAt = booking.status === "returned" ? Date.parse(booking.statusUpdatedAt || "") : NaN;
+  const baseTime = Number.isFinite(returnedAt) ? returnedAt : endTime;
+  return Number.isFinite(baseTime) ? baseTime + OWNER_COMPLETION_GRACE_MS : NaN;
+};
+const ownerCompletionOverdue = (booking) => {
+  const deadline = ownerCompletionDeadline(booking);
+  return Number.isFinite(deadline) && Date.now() >= deadline;
+};
+const ownerCompletionReminderDue = (booking) => booking.status === "returned"
+  ? isOwnerCompletionPending(booking)
+  : booking.status === "approved" && Number.isFinite(bookingEndTimestamp(booking))
+    && Date.now() >= bookingEndTimestamp(booking);
+const ownerBookingRestricted = (owner) => ownerCommissionRestricted(owner)
+  || db.bookings.some((booking) => booking.owner === owner && ownerCompletionOverdue(booking));
+const equipmentBookingRestricted = (equipment) => !!equipment.bookingRestricted
+  || !!equipment.commissionRestricted
+  || ownerBookingRestricted(equipment.owner);
+const equipmentRestrictionMessage = (equipment) => {
+  if (equipment.commissionRestricted || ownerCommissionRestricted(equipment.owner)) {
+    return "New bookings are paused while the owner settles overdue commission.";
+  }
+  if (db.bookings.some((booking) => booking.owner === equipment.owner && ownerCompletionOverdue(booking))) {
+    return "New bookings are paused while the owner completes an overdue rental confirmation.";
+  }
+  return "New bookings are temporarily paused for this listing.";
+};
+const equipmentCommissionRestricted = equipmentBookingRestricted;
+const commissionSettings = () => ({ paymentInstructions:"", gracePeriodDays:7, ...(db.commissionSettings || {}) });
+const isPrivateAssetRef = (value) => typeof value === "string" && value.startsWith("storage://private/");
+const assetSrc = (value) => {
+  if (typeof value !== "string") return "";
+  if (value.startsWith("storage://public/")) return window.agrirentaStorage?.publicUrl(value) || "";
+  return value;
+};
+const privateAssetAttributes = (value, attribute="src") => isPrivateAssetRef(value)
+  ? `data-private-asset="${escapeHtml(value)}"`
+  : `${attribute}="${escapeHtml(assetSrc(value))}"`;
+const img = (k) => {
+  if (typeof k === "string" && k.startsWith("storage://public/")) return assetSrc(k);
+  return typeof k === "string" && (k.startsWith("data:image/") || k.startsWith("https://") || k.startsWith("http://") || k.startsWith("images/")) ? k : encodeURI(IMG[k] || IMG.tractor);
+};
 const stars = (r) => `<span class="stars">${"★".repeat(Math.round(r))}${"☆".repeat(5 - Math.round(r))}</span>`;
 const fmt = (d) => new Date(d + "T00:00").toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 const me = () => db.users.find((u) => u.email === db.me);
-const usr = (e) => db.users.find((u) => u.email === e) || { name: e, v: {} };
+const usr = (e) => db.users.find((u) => u.email === e) || { name: e === "system" ? "AgriRenta" : e, v: {} };
 const E = (id) => db.eq.find((e) => e.id == id);
 const bookingEquipment = (b) => E(b.eq) || { id: b.eq, name: b.equipmentName || "Equipment listing", spec: "", img: "tractor", price: 0, rating: 0, n: 0, owner: b.owner || "", location: "" };
 const threadOf = (message) => message.thread || message.from;
@@ -558,7 +680,84 @@ const homeOf = (u) => ({ customer: "#/home", owner: "#/dashboard", admin: "#/adm
 const toast = (m) => { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600); };
 const initial = (n) => (n || "?")[0].toUpperCase();
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[char]);
-const avatar = (u, size="") => `<span class="avatar ${size}" aria-label="${u.name} profile">${u.avatar ? `<img src="${u.avatar}" alt="${u.name} profile picture">` : `<span>${initial(u.name)}</span>`}</span>`;
+const passwordValidationError = (password) => {
+  const missing = [];
+  if (password.length < 8) missing.push("at least 8 characters");
+  if (!/[A-Z]/.test(password)) missing.push("an uppercase letter");
+  if (!/[a-z]/.test(password)) missing.push("a lowercase letter");
+  if (!/[0-9]/.test(password)) missing.push("a number");
+  if (!/[^A-Za-z0-9]/.test(password)) missing.push("a special character");
+  return missing.length ? `Password must include ${missing.join(", ")}.` : null;
+};
+const LOCAL_PASSWORD_ITERATIONS = 120000;
+const bytesToBase64 = (bytes) => {
+  let binary = "";
+  bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+  return btoa(binary);
+};
+const base64ToBytes = (value) => Uint8Array.from(atob(value), character => character.charCodeAt(0));
+async function hashLocalPassword(password) {
+  if (!window.crypto?.subtle) throw new Error("Secure local password storage is unavailable in this browser.");
+  const salt = window.crypto.getRandomValues(new Uint8Array(16));
+  const key = await window.crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = await window.crypto.subtle.deriveBits(
+    { name:"PBKDF2", salt, iterations:LOCAL_PASSWORD_ITERATIONS, hash:"SHA-256" }, key, 256
+  );
+  return `pbkdf2$${LOCAL_PASSWORD_ITERATIONS}$${bytesToBase64(salt)}$${bytesToBase64(new Uint8Array(bits))}`;
+}
+async function verifyLocalPassword(password, encoded) {
+  const [algorithm, iterationsText, saltText, expectedText] = String(encoded || "").split("$");
+  const iterations = Number(iterationsText);
+  if (algorithm !== "pbkdf2" || !Number.isInteger(iterations) || iterations < 10000
+    || !saltText || !expectedText || !window.crypto?.subtle) {
+    throw new Error("This local password record cannot be verified securely. Connect Supabase or reset the local demo data.");
+  }
+  const key = await window.crypto.subtle.importKey("raw", new TextEncoder().encode(password), "PBKDF2", false, ["deriveBits"]);
+  const bits = new Uint8Array(await window.crypto.subtle.deriveBits(
+    { name:"PBKDF2", salt:base64ToBytes(saltText), iterations, hash:"SHA-256" }, key, 256
+  ));
+  const expected = base64ToBytes(expectedText);
+  if (bits.length !== expected.length) return false;
+  return bits.reduce((different, byte, index) => different | (byte ^ expected[index]), 0) === 0;
+}
+async function migrateLocalPasswords(state) {
+  let changed = false;
+  for (const user of state.users || []) {
+    if (typeof user.pw !== "string") continue;
+    if (!user.pwHash) user.pwHash = await hashLocalPassword(user.pw);
+    delete user.pw;
+    changed = true;
+  }
+  return changed;
+}
+const avatar = (u, size="") => `<span class="avatar ${size}" aria-label="${escapeHtml(u.name)} profile">${u.avatar ? `<img src="${escapeHtml(assetSrc(u.avatar))}" alt="${escapeHtml(u.name)} profile picture">` : `<span>${initial(u.name)}</span>`}</span>`;
+async function loadPrivateAssets(root) {
+  const nodes = [...root.querySelectorAll("[data-private-asset]")];
+  if (!nodes.length) return;
+  if (!window.agrirentaStorage?.privateUrls) {
+    console.error("Private AgriRenta documents require the configured Storage API.");
+    toast("Could not load a private document. Contact the administrator.");
+    return;
+  }
+  const references = [...new Set(nodes.map((node) => node.dataset.privateAsset))];
+  let urls;
+  try { urls = await window.agrirentaStorage.privateUrls(references); }
+  catch (error) {
+    console.error("Could not load private AgriRenta documents.", error);
+    toast("Could not load private documents. Refresh or contact the administrator.");
+    return;
+  }
+  for (const node of nodes) {
+    const url = urls.get(node.dataset.privateAsset);
+    if (!url || !node.isConnected) continue;
+    if (node.tagName === "IMG") node.src = url;
+    else if (node.tagName === "A") {
+      node.href = url;
+      node.target = "_blank";
+      node.rel = "noopener";
+    }
+  }
+}
 const roleLabel = (u) => ROLE_LABEL[u?.role] || "Guest";
 const profileHref = (email, viewer = me()) => `${viewer?.role === "admin" ? "#/user/" : "#/member/"}${encodeURIComponent(email)}`;
 const locationText = (e) => e.location || "Location not set";
@@ -573,8 +772,10 @@ let regRole = "customer", cat = "All types", q = "", idType = "PhilSys ID", draf
 
 /* ---------- Views: each returns [html, "auth" | "app"] ---------- */
 const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.png" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
+const passwordField = (id, name, label, autocomplete, placeholder="") => `<label for="${id}">${label}</label><div class="password-field"><input id="${id}" name="${name}" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" required><button type="button" class="password-toggle" data-password-toggle data-target="${id}" data-field-label="${label.toLowerCase()}" aria-label="Show ${label.toLowerCase()}" aria-pressed="false" title="Show ${label.toLowerCase()}"><i class="bi bi-eye" aria-hidden="true"></i></button></div>`;
 const isFav = (e, email = db.me) => !!(email && (db.favorites[email] || []).map(String).includes(String(e)));
 const eqCard = (e) => `<article class="neu card equipment-card"><a class="equipment-open" href="#/equipment/${e.id}"><img src="${img(e.img)}" alt="${e.name}"><h3>${e.name}</h3><p>${e.spec}</p></a>
+  ${equipmentCommissionRestricted(e) ? `<p class="commission-restricted-note">${equipmentRestrictionMessage(e)}</p>` : ""}
   <p class="equipment-location"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> ${locationText(e)}</p>
   <div class="row"><span>${stars(e.rating)} <b>${e.rating}</b> <small>(${e.n})</small></span><button class="icon-btn ${isFav(e.id) ? "favorite-on" : ""}" type="button" aria-label="${isFav(e.id) ? "Remove from" : "Add to"} favorites" data-act="favorite" data-v="${e.id}"><i class="bi ${isFav(e.id) ? "bi-heart-fill" : "bi-heart"}" aria-hidden="true"></i></button></div><div class="row"><b class="price">${peso(e.price)} / day</b><i class="dot"></i></div><a class="equipment-owner-link" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(usr(e.owner))}<span>Provided by <b>${escapeHtml(usr(e.owner).name)}</b></span></a></article>`;
 const availableEquipment = () => db.eq.filter(e => (!e.status || e.status === "approved") && e.visible !== false);
@@ -593,7 +794,7 @@ const list = () => {
 const chips = () => `<div class="chips">${CATS.map((c) => `<button class="chip ${c === cat ? "on" : ""}" data-act="cat" data-v="${c}">${c}</button>`).join("")}</div>`;
 const platformSearchResults = (term, viewer) => {
   const query = String(term || "").trim().toLowerCase();
-  if (!query) return `<p class="empty-state">Search people, equipment, or locations.</p>`;
+  if (!query) return "";
   const isAdmin = viewer?.role === "admin";
   const users = db.users.filter(user => (isAdmin || user.role !== "admin")
     && [user.name, user.role, ...(isAdmin ? [user.email, user.phone, user.address] : [])].join(" ").toLowerCase().includes(query));
@@ -608,7 +809,7 @@ const ownerListingPanel = (email, ownProfile) => {
     && (ownProfile || ((!item.status || item.status === "approved") && item.visible !== false)));
   return `<div class="row"><h2>Equipment listed</h2><span class="pill">${listings.length} ${ownProfile ? "listings" : "available listings"}</span></div>
     ${ownProfile && listings.some(item => item.status && item.status !== "approved")
-      ? `<p class="neu owner-review-notice">Listings marked “review” are visible only to you and the admin. Customers can find and book them after admin approval.</p>` : ""}
+      ? `<p class="neu owner-review-notice">Listings marked “review” are visible only to you and the administrator. Customers can find and book them after administrator approval.</p>` : ""}
     <div class="grid">${listings.map(item => `<div><div class="owner-profile-listing-status">${pill(item.status || "approved")}${item.visible === false ? `<span class="pill warn">Hidden</span>` : ""}</div>${eqCard(item)}</div>`).join("") || "<p>No approved equipment listings yet.</p>"}</div>`;
 };
 
@@ -616,13 +817,9 @@ const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
 
-  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">System Status: Under Maintenance
-
-Please be informed that the AgriRenta System is currently undergoing maintenance and further development under the supervision of <b>Dennis Sumogod – Programmer</b> of AgriRenta.<br>
-
-The system is still being improved to ensure better performance, reliability, security, and a smooth user experience..</p>
+  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">Log in to continue your farming journey.</p>
     <form data-form="login"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
-    <label>Password</label><input name="pw" type="password" placeholder="Enter your password" required>
+    ${passwordField("loginPassword", "pw", "Password", "current-password", "Enter your password")}
     <p style="text-align:right;margin:.5rem 0 0"><a href="#" data-act="forgot"><b>Forgot password?</b></a></p>
     <button class="btn btn-primary btn-block">Log In</button></form>
     <p style="text-align:center;margin:.8rem 0 0">or continue with</p>
@@ -631,28 +828,34 @@ The system is still being improved to ensure better performance, reliability, se
 
   register: () => authCard(`<h1 style="text-align:center;">Create account</h1><p style="text-align:center;">Pick how you will use AgriRenta.</p>
     <div class="chips"><button class="chip ${regRole === "customer" ? "on" : ""}" data-act="role" data-v="customer">Customer</button><button class="chip ${regRole === "owner" ? "on" : ""}" data-act="role" data-v="owner">Equipment owner</button></div>
-    <small>Admins join by invitation only.</small>
+    <small>Administrators join by invitation only.</small>
     <form data-form="register"><label>Full name</label><input name="name" placeholder="Enter your full name" required>
     <label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
     <label>Mobile number</label><input name="phone" placeholder="09XX XXX XXXX" required>
-    <label>Password</label><input name="pw" type="password" minlength="8" placeholder="Create a strong password" required>
-    <label>Confirm password</label><input name="pw2" type="password" placeholder="Re-enter your password" required>
+    ${passwordField("registerPassword", "pw", "Password", "new-password", "Create a strong password")}
+    <small class="password-guidance">Use 8+ characters with uppercase and lowercase letters, a number, and a special character.</small>
+    ${passwordField("registerPasswordConfirm", "pw2", "Confirm password", "new-password", "Re-enter your password")}
     <label class="check"><input type="checkbox" required> I agree to the Terms of Service and Privacy Policy</label>
     <button class="btn btn-primary btn-block">Create Account</button></form>
     <p style="text-align:center;margin:.8rem 0 0">or continue with</p>
     <button class="btn btn-soft btn-block google-login" data-act="google"><img src="images/google.jpg" alt="">Continue with Google</button>
-    <a class="link" href="#/login">Already registered? Log in</a><p style="text-align:center;margin-top:.8rem"><span class="pill">Next: verify your mobile number and ID</span></p>`),
+    <a class="link" href="#/login">Already registered? Log in</a><p style="text-align:center;margin-top:.8rem"><span class="pill">Next: verify your email and submit your ID</span></p>`),
 
   "choose-role": () => authCard(`<h1 style="text-align:center;">Welcome to AgriRenta</h1><p style="text-align:center;">Pick how you will use AgriRenta.</p>
     <div class="chips"><button class="chip ${regRole === "customer" ? "on" : ""}" data-act="role" data-v="customer">Customer</button><button class="chip ${regRole === "owner" ? "on" : ""}" data-act="role" data-v="owner">Equipment owner</button></div>
-    <small>Admins join by invitation only.</small>
+    <small>Administrators join by invitation only.</small>
     <button class="btn btn-primary btn-block" data-act="setrole">Continue</button>`),
 
-  "verify-mobile": () => authCard(`<h1 style="text-align:center;">Verify your mobile</h1><p>We sent a 6-digit code to <b>${escapeHtml(me()?.phone || "your account")}</b>. For this demo, enter any six digits.</p>
-    <form data-form="otp"><div class="otp">${"<input inputmode='numeric' maxlength='1' required>".repeat(6)}</div>
-    <button class="btn btn-primary btn-block">Verify mobile</button></form><button class="btn btn-soft btn-block" type="button" data-act="verifylater">Verify later</button><a class="link" href="#" data-act="resend">Resend code</a>`),
+  "verify-email": (email) => {
+    const address = decodeURIComponent(email || "");
+    return authCard(`<h1 style="text-align:center;">Verify your email</h1><p>${serverApiEnabled ? `Enter the 6-digit code we sent to <b>${escapeHtml(address || "your email address")}</b>.` : "Local-only demo mode: no email is sent. Enter any six digits."}</p>
+      <form data-form="emailotp"><input type="hidden" name="email" value="${escapeHtml(address)}"><div class="otp"><input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" aria-label="6-digit email verification code" required></div>
+      <button class="btn btn-primary btn-block">Verify email</button></form>
+      ${serverApiEnabled ? `<button class="btn btn-soft btn-block" type="button" data-act="resend-email" data-v="${escapeHtml(address)}">Resend email code</button>` : ""}
+      <a class="link" href="#/login">Back to log in</a>`);
+  },
 
-  "verify-id": () => authCard(`<h1 style="text-align:center;">Verify your ID</h1><p>Step 2 of 3 · Government ID and selfie</p>
+  "verify-id": () => authCard(`<h1 style="text-align:center;">Verify your ID</h1><p>Identity check · Government ID and selfie</p>
     <div class="chips">${["PhilSys ID", "UMID", "Driver's", "Passport"].map((t) => `<button class="chip ${t === idType ? "on" : ""}" data-act="idtype" data-v="${t}">${t}</button>`).join("")}</div>
     <form data-form="id"><label>ID front</label><input type="file" accept="image/*" required><label>ID back</label><input type="file" accept="image/*" required>
     <label>Selfie check (hold your phone at eye level, good light)</label><input type="file" accept="image/*" capture="user" required>
@@ -672,10 +875,10 @@ The system is still being improved to ensure better performance, reliability, se
     return [`<a href="${backHref}">← Back</a><div class="grid equipment-detail-layout" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))"><div><img class="hero-img neu" src="${img(e.img)}" alt="${e.name}"></div>
     <div><button class="pill status-button ${todayUnavailable?'warn':''}" type="button" disabled>${todayUnavailable?'Unavailable / booked':'Available'} ${todayUnavailable?'×':'✓'}</button> ${badge(o)}<h1>${e.name} · ${e.spec}</h1><p>Reliable power for everyday field work. Suitable for plowing, hauling and general farm operations.</p>
     <p class="equipment-location"><i class="bi bi-geo-alt-fill"></i> ${locationText(e)}</p><div class="row"><b class="price" style="font-size:2rem">${peso(e.price)} / day</b><span>${stars(e.rating)} <b>${e.rating}</b> (${e.n})</span></div>
-    ${own ? `<section class="neu owner-edit-panel"><h3>Customer visibility</h3><p>${e.visible === false ? "Hidden from customers." : "Visible to customers after approval."}</p><button class="btn btn-soft" type="button" data-act="visibility" data-v="${e.id}">${e.visible === false ? "Make visible to customers" : "Hide from customers"}</button><h3 style="margin-top:1rem">Listing location</h3><form data-form="updatelocation" class="stack"><input type="hidden" name="eq" value="${e.id}"><label>Location</label><input name="location" list="bunawanLocations" value="${e.location||''}" placeholder="Type your equipment location" required><datalist id="bunawanLocations">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><button class="btn btn-primary">Save location</button></form><h3>Equipment availability</h3><p class="muted">Tap a future date to mark it unavailable or available. Booked dates cannot be changed here.</p><div class="owner-calendar">${calendarDays(e.id,30,false)}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : `<div class="neu" style="margin:1.2rem 0"><small>Provided by</small><a class="owner-profile-card" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(o)}<span><b>${escapeHtml(o.name)}</b><small>${r ? r.v.toFixed(1) + " · " + r.n + " reviews" : "New owner"} · ${isVerified(o) ? "ID verified" : "Verification pending"}</small></span></a></div>${isAdmin ? `<p class="muted">Admin listing view · Status: ${escapeHtml(e.status || "approved")} · ${e.visible === false ? "Hidden from customers" : "Visible to customers"}</p>` : `<div class="equipment-actions"><a class="btn btn-primary" href="#/book/${e.id}">Book Now</a><a class="floating-message" href="#/messages/${encodeURIComponent(e.owner)}" aria-label="Message equipment owner" title="Message equipment owner"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i></a></div>`}`}</div></div>
+    ${own ? `<section class="neu owner-edit-panel"><h3>Customer visibility</h3><p>${e.visible === false ? "Hidden from customers." : "Visible to customers after approval."}</p><button class="btn btn-soft" type="button" data-act="visibility" data-v="${e.id}">${e.visible === false ? "Make visible to customers" : "Hide from customers"}</button><h3 style="margin-top:1rem">Listing location</h3><form data-form="updatelocation" class="stack"><input type="hidden" name="eq" value="${e.id}"><label>Location</label><input name="location" list="bunawanLocations" value="${e.location||''}" placeholder="Type your equipment location" required><datalist id="bunawanLocations">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><button class="btn btn-primary">Save location</button></form><h3>Equipment availability</h3><p class="muted">Tap a future date to mark it unavailable or available. Booked dates cannot be changed here.</p><div class="owner-calendar">${calendarDays(e.id,30,false)}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : `<div class="neu" style="margin:1.2rem 0"><small>Provided by</small><a class="owner-profile-card" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(o)}<span><b>${escapeHtml(o.name)}</b><small>${r ? r.v.toFixed(1) + " · " + r.n + " reviews" : "New owner"} · ${isVerified(o) ? "ID verified" : "Verification pending"}</small></span></a></div>${isAdmin ? `<p class="muted">Administrator listing view · Status: ${escapeHtml(e.status || "approved")} · ${e.visible === false ? "Hidden from customers" : "Visible to customers"}</p>` : `<div class="equipment-actions">${equipmentCommissionRestricted(e) ? `<p class="commission-restricted-note">New bookings are paused because this owner has overdue commission or an unconfirmed completed rental.</p>` : `<a class="btn btn-primary" href="#/book/${e.id}">Book Now</a>`}<a class="floating-message" href="#/messages/${encodeURIComponent(e.owner)}" aria-label="Message equipment owner" title="Message equipment owner"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i></a></div>`}`}</div></div>
     ${!own ? `<section class="neu availability-panel"><div class="row"><h3>Equipment availability</h3><span class="pill">Next 14 days</span></div><p class="muted">Choose dates that are not blocked by the owner or reserved by another customer.</p><div class="availability-days">${Array.from({length:14},(_,i)=>{const dt=new Date();dt.setHours(12,0,0,0);dt.setDate(dt.getDate()+i);const day=dateKey(dt);const unavailable=dayStatus(e.id,day);return `<span class="availability-day ${unavailable?'unavailable':'available'}"><b>${dt.toLocaleDateString('en-US',{weekday:'short'})}</b><strong>${dt.getDate()}</strong><small>${unavailable?'Unavailable / booked':'Available'}</small></span>`}).join('')}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : ''}`, "app"]; },
 
-  book: (id, u) => { const e = E(id); if (!e || (e.status && e.status !== "approved") || e.visible === false) return V.explore(); draft = draft && draft.eq == id ? draft : { eq: id, start: "", end: "", delivery: "Delivery", addr: "", pay: "Cash on Delivery (COD)" };
+  book: (id, u) => { const e = E(id); if (!e || (e.status && e.status !== "approved") || e.visible === false) return V.explore(); if (equipmentCommissionRestricted(e)) return [`<a href="#/equipment/${id}">← Back to equipment</a><section class="neu"><h1>Booking requests paused</h1><p>This owner is temporarily unable to accept new booking requests. Existing rentals and messages remain available.</p></section>`, "app"]; draft = draft && draft.eq == id ? draft : { eq: id, start: "", end: "", delivery: "Delivery", addr: "", pay: "Cash on Delivery (COD)" };
     const today = dateKey(new Date());
     return [`<a href="#/equipment/${id}">← Back</a><h1>Book equipment</h1><p>Review your rental details. ${badge(u)}</p>
     <div class="neu item"><img src="${img(e.img)}" alt="" style="width:90px;height:70px;object-fit:cover;border-radius:14px"><div><h3>${e.name} · ${e.spec}</h3><p class="equipment-location"><i class="bi bi-geo-alt-fill"></i> ${locationText(e)}</p><b class="price">${peso(e.price)} / day</b></div></div>
@@ -687,7 +890,7 @@ The system is still being improved to ensure better performance, reliability, se
     <div class="neu sum"><h3>Price summary</h3><div><span>Rental fee (1 day)</span><b>${peso(e.price)}</b></div><div><span>Delivery fee</span><small>Calculated at checkout</small></div><div class="tot"><span>Estimated total</span><span>${peso(e.price)}+</span></div></div>
     <button class="btn btn-primary">Continue</button></form>`, "app"]; },
 
-  confirm: (id) => { const e = E(id); if (!e || !draft || !draft.start) return V.explore(); const d = Math.max(1, Math.round((new Date(draft.end) - new Date(draft.start)) / 864e5));
+  confirm: (id) => { const e = E(id); if (e && equipmentCommissionRestricted(e)) return V.book(id, me()); if (!e || !draft || !draft.start) return V.explore(); const d = Math.max(1, Math.round((new Date(draft.end) - new Date(draft.start)) / 864e5));
     return [`<a href="#/book/${id}">← Back</a><h1>Confirm booking</h1><p>One last look before you submit.</p>
     <div class="neu item"><img src="${img(e.img)}" alt="" style="width:90px;height:70px;object-fit:cover;border-radius:14px"><div><h3>${e.name}</h3><p>${fmt(draft.start)} – ${fmt(draft.end)} · ${d} day rental</p>${pill("request")}</div></div>
     <form data-form="confirm" class="stack"><h3>Payment method</h3>
@@ -699,7 +902,6 @@ The system is still being improved to ensure better performance, reliability, se
       <h3 id="paymentFormTitle">Payment instructions</h3>
       <p id="paymentFormHint">Choose a payment method to see the next step.</p>
       <div id="paymentMethodMessage" class="payment-method-message"></div>
-      <p class="payment-note"><i class="bi bi-shield-lock" aria-hidden="true"></i> Never enter your wallet PIN, password, or OTP on AgriRenta. Online payments open the provider's secure checkout. Your booking and equipment details remain unchanged if you switch payment methods before submitting.</p>
     </section>
     <div class="neu sum"><h3>Cost breakdown</h3><div><span>Rental fee</span><b>${peso(e.price * d)}</b></div><div><span>Deposit (if required)</span><small>To be confirmed</small></div><div><span>Delivery</span><small>Calculated separately</small></div><div class="tot"><span>Total estimate</span><span>${peso(e.price * d)}+</span></div></div>
     <label class="check"><input type="checkbox" name="termsAccepted" value="yes" required> I have reviewed the rental terms.</label><button class="btn btn-primary">Submit Rental Request</button></form>`, "app"]; },
@@ -708,7 +910,7 @@ The system is still being improved to ensure better performance, reliability, se
     return [`<div class="neu" style="max-width:520px;margin:2rem auto;text-align:center"><div class="ico" style="width:80px;height:80px;margin:0 auto 1rem;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-size:2rem">✓</div>
     <h1>Rental details</h1><p>${b.status === "pending" ? "Your rental request is waiting for the equipment owner." : "Booking reference and rental status."}</p><div class="neu inset" style="text-align:left"><small>BOOKING REFERENCE</small><div class="row"><h2>${escapeHtml(b.ref)}</h2>${pill(b.status || "pending")}</div>
     <b>${escapeHtml(e.name)} · ${escapeHtml(e.spec)}</b><p>${fmt(b.start)} – ${fmt(b.end)}</p><div class="row"><span>Estimated rental fee</span><b class="price">${peso(b.total)}+</b></div><div class="row"><span>Payment method</span><b>${escapeHtml(b.pay || "Not selected")}</b></div><div class="row"><span>Payment status</span><b>${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</b></div><p><a href="#/equipment/${e.id}">View equipment</a> · <a href="#/owner/${encodeURIComponent(b.owner)}">View equipment owner</a></p><small>The owner sees your ID badge and star rating before approving.</small></div>
-    <p style="margin-top:1rem"><b>What happens next?</b> ${b.pay === "Cash on Delivery (COD)" ? "The owner will review the request. Pay when the rental is delivered or collected, then the owner/admin should record payment received." : b.pay === "GCash" ? "This was a GCash checkout demonstration only; no real payment was processed. The owner will review your rental request." : "The equipment owner will review your booking request."}</p>
+    <p style="margin-top:1rem"><b>What happens next?</b> ${b.pay === "Cash on Delivery (COD)" ? "The owner will review the request. Pay when the rental is delivered or collected, then the owner or administrator should record payment received." : "The equipment owner will review your booking request."}</p>
     <a class="btn btn-primary btn-block" href="#/bookings">View My Bookings</a><a class="btn btn-soft btn-block" href="#/home">Back to Home</a></div>`, "app"]; },
 
   home: (a, u) => { const f = db.eq.find(e=>(!e.status||e.status==="approved") && e.visible !== false) || db.eq[0], steps = [!!u.phone && u.v.mobile, u.v.email, u.v.id === "ok", u.v.selfie === "ok"].filter(Boolean).length;
@@ -723,11 +925,11 @@ The system is still being improved to ensure better performance, reliability, se
   bookings: (a, u) => { const mine = db.bookings.filter((b) => b.renter === u.email), f = a || "all";
     const show = mine.filter((b) => f === "all" || (f === "pending" && b.status === "pending") || (f === "active" && b.status === "approved") || (f === "history" && ["returned", "declined"].includes(b.status)));
     return [`<h1>My bookings</h1><p>Keep track of your equipment rentals.</p><div class="chips">${["all", "pending", "active", "history"].map((t) => `<a class="chip ${t === f ? "on" : ""}" href="#/bookings/${t}">${t[0].toUpperCase() + t.slice(1)}</a>`).join("")}</div>
-    <div class="stack">${show.map((b) => { const e = bookingEquipment(b); return `<div class="neu item booking-item"><a class="booking-equipment-link" href="#/equipment/${e.id}" aria-label="View ${e.name} equipment details"><img src="${img(e.img)}" alt="${e.name}" style="width:90px;height:70px;object-fit:cover;border-radius:14px"><div><h3>${e.name}</h3><p>${b.ref}</p></div></a><div class="booking-status-actions">${b.status === "returned" ? `<a class="btn btn-soft btn-sm" href="#/submitted/${encodeURIComponent(b.ref)}">View</a>` : pill(b.status)} ${b.status === "returned" && !b.ratedOwner ? `<a class="btn btn-primary btn-sm" href="#/rate/${encodeURIComponent(b.ref)}">★ Rate owner</a>` : ""} ${b.status === "pending" ? `<button class="btn btn-soft btn-sm btn-danger" data-act="cancel" data-v="${b.ref}">Cancel</button>` : ""}</div><div class="booking-dates-payment"><p>${fmt(b.start)} – ${fmt(b.end)}</p><small>${b.pay || "Payment method not set"} · ${String(b.paymentStatus || "pending").replaceAll("_"," ")}</small><b class="price">${peso(b.total)}</b><a class="btn btn-soft btn-sm" href="#/submitted/${encodeURIComponent(b.ref)}">${b.status === "pending" ? "View your rent" : "View rental"}</a></div></div>`; }).join("") || "<p>No bookings here yet.</p>"}</div>
+    <div class="stack">${show.map((b) => { const e = bookingEquipment(b); return `<div class="neu item booking-item"><a class="booking-equipment-link" href="#/equipment/${e.id}" aria-label="View ${e.name} equipment details"><img src="${img(e.img)}" alt="${e.name}" style="width:90px;height:70px;object-fit:cover;border-radius:14px"><div><h3>${e.name}</h3><p>${b.ref}</p></div></a><div class="booking-status-actions">${b.status === "returned" ? `<a class="btn btn-soft btn-sm" href="#/submitted/${encodeURIComponent(b.ref)}">View</a>` : pill(b.status)} ${b.status === "returned" && !b.ratedOwner ? `<a class="btn btn-primary btn-sm" href="#/rate/${encodeURIComponent(b.ref)}">★ Rate owner</a>` : ""} ${b.status === "pending" && b.pay !== "GCash" ? `<button class="btn btn-soft btn-sm btn-danger" data-act="cancel" data-v="${b.ref}">Cancel</button>` : ""}</div><div class="booking-dates-payment"><p>${fmt(b.start)} – ${fmt(b.end)}</p><small>${b.pay || "Payment method not set"} · ${String(b.paymentStatus || "pending").replaceAll("_"," ")}</small><b class="price">${peso(b.total)}</b><a class="btn btn-soft btn-sm" href="#/submitted/${encodeURIComponent(b.ref)}">${b.status === "pending" ? "View your rent" : "View rental"}</a></div></div>`; }).join("") || "<p>No bookings here yet.</p>"}</div>
     <div class="neu"><h3>Need another machine?</h3><p>Explore equipment available for your farm.</p><a href="#/explore"><b>Browse equipment</b></a></div>`, "app"]; },
 
   alerts: (a, u) => { const rows = notificationRecords(u), reads = new Set(db.notificationReads[u.email] || []);
-    return [`<h1>Notifications</h1><p>Unread notifications: <b>${rows.filter(item => !reads.has(item.id)).length}</b>. Select the red dot to mark one as read.</p><div class="stack">${rows.map(item => `<article class="neu item notification-row ${reads.has(item.id) ? "is-read" : ""}"><button type="button" class="notification-read ${reads.has(item.id) ? "read" : ""}" data-act="marknotification" data-v="${encodeURIComponent(item.id)}" aria-label="${reads.has(item.id) ? "Notification read" : "Mark notification as read"}" title="${reads.has(item.id) ? "Read" : "Mark as read"}"></button><a class="notification-content" href="${item.href}"><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.description)}</p><small>${item.time ? new Date(item.time).toLocaleString() : ""}</small></a></article>`).join("") || "<p>No notifications yet.</p>"}</div>`, "app"]; },
+    return [`<h1>Notifications</h1><p>Unread notifications: <b>${rows.filter(item => !reads.has(item.id)).length}</b>. Select the red dot to mark one as read.</p><div class="stack">${rows.map(item => `<article class="neu item notification-row ${reads.has(item.id) ? "is-read" : ""}"><button type="button" class="notification-read ${reads.has(item.id) ? "read" : ""}" data-act="marknotification" data-v="${encodeURIComponent(item.id)}" aria-label="${reads.has(item.id) ? "Notification read" : "Mark notification as read"}" title="${reads.has(item.id) ? "Read" : "Mark as read"}"></button><a class="notification-content" href="${item.href}" data-notification-id="${encodeURIComponent(item.id)}"><b>${escapeHtml(item.title)}</b><p>${escapeHtml(item.description)}</p><small>${item.time ? new Date(item.time).toLocaleString() : ""}</small></a></article>`).join("") || "<p>No notifications yet.</p>"}</div>`, "app"]; },
 
   rate: (ref, u) => { const b = db.bookings.find((x) => x.ref === ref); if (!b) return V.bookings(null, u); const owner = u.role === "owner", t = usr(owner ? b.renter : b.owner);
     const tags = owner ? ["Returned on time", "Careful with equipment", "Good communication", "Paid on time", "Followed instructions"] : ["On time", "Clean equipment", "Good condition", "Friendly owner", "Fair price", "Easy pickup"];
@@ -738,28 +940,33 @@ The system is still being improved to ensure better performance, reliability, se
     <form data-form="review" data-ref="${ref}"><textarea name="text" rows="3" placeholder="Share more about your experience (optional)"></textarea><button class="btn btn-primary btn-block">Submit review</button></form>`, "app"]; },
 
   verification: (a, u) => {
-    if (u.role === "admin") return [`<a href="#/profile">← Back to account</a><h1>Admin account</h1><section class="neu"><p>Admin accounts do not use the customer and equipment-owner identity verification checklist.</p><a class="btn btn-primary" href="#/admin">Open admin overview</a></section>`, "app"];
+    if (u.role === "admin") return [`<a href="#/profile">← Back to account</a><h1>Administrator account</h1><section class="neu"><p>Administrator accounts do not use the customer and equipment-owner identity verification checklist.</p><a class="btn btn-primary" href="#/admin">Open administrator overview</a></section>`, "app"];
     const v = u.v, own = u.role === "owner";
-    const rows = [["<i class=\"bi bi-phone\" aria-hidden=\"true\"></i>", "Mobile number", u.phone || "Not provided", u.phone && v.mobile ? "ok" : "none", u.phone ? "#/verify-mobile" : "#/personal"], ["<i class=\"bi bi-envelope\" aria-hidden=\"true\"></i>", "Email address", u.email, v.email ? "ok" : "none", "#/personal"], ["<i class=\"bi bi-person-vcard\" aria-hidden=\"true\"></i>", "Government ID", "PhilSys, UMID, license or passport", v.id || "none", "#/verify-id"], ["<i class=\"bi bi-camera\" aria-hidden=\"true\"></i>", "Selfie match", "Matches your face to your ID", v.selfie || "none", "#/verify-id"]];
+    const rows = [["<i class=\"bi bi-phone\" aria-hidden=\"true\"></i>", "Transaction contact number", u.phone || "Not provided", u.phone ? "contact" : "none", "#/personal"], ["<i class=\"bi bi-envelope\" aria-hidden=\"true\"></i>", "Email address", u.email, v.email ? "ok" : "none", "#/personal"], ["<i class=\"bi bi-person-vcard\" aria-hidden=\"true\"></i>", "Government ID", "PhilSys, UMID, license or passport", v.id || "none", "#/verify-id"], ["<i class=\"bi bi-camera\" aria-hidden=\"true\"></i>", "Selfie match", "Matches your face to your ID", v.selfie || "none", "#/verify-id"]];
     if (own) rows.push(["<i class=\"bi bi-file-earmark-text\" aria-hidden=\"true\"></i>", "Equipment papers", "OR/CR and photos for your listings", v.papers || "none", "#/papers"]);
     const pct = Math.round(rows.filter((r) => r[3] === "ok").length / rows.length * 100);
     return [`<a href="#/profile">← Back</a><h1>Verification center</h1><p>Every user type has its own checklist.</p>
     <div class="neu item"><div class="ring" style="--p:${pct}"><b>${pct}%</b></div><div><small>TRUST LEVEL</small><h2>${isVerified(u) ? (own ? "Verified owner" : "Verified renter") : (own ? "Basic owner" : "Basic renter")}</h2><p>${isVerified(u) ? "Your profile shows an ID verified badge." : "Ratings unlock after verification."}</p></div></div>
-    <div class="stack">${rows.map((r) => `<div class="neu item"><span class="ico">${r[0]}</span><div><b>${r[1]}</b><p>${r[2]}</p></div>${r[3] === "ok" ? `<span class="pill">✓ Done</span>` : r[3] === "review" ? `<span class="pill warn">in review</span><a class="btn btn-soft btn-sm" href="${r[4]}">Edit / Resubmit</a>` : `<a class="btn btn-primary btn-sm" href="${r[4]}">Start verification</a>`}</div>`).join("")}</div>
+    <div class="stack">${rows.map((r) => `<div class="neu item"><span class="ico">${r[0]}</span><div><b>${r[1]}</b><p>${r[2]}</p></div>${r[3] === "ok" ? `<span class="pill">✓ Done</span>` : r[3] === "contact" ? `<a class="btn btn-soft btn-sm" href="${r[4]}">Edit contact</a>` : r[3] === "review" ? `<span class="pill warn">in review</span><a class="btn btn-soft btn-sm" href="${r[4]}">Edit / Resubmit</a>` : `<a class="btn btn-primary btn-sm" href="${r[4]}">Start verification</a>`}</div>`).join("")}</div>
     <p>Verified profiles get a badge and star ratings.</p>`, "app"]; },
 
   profile: (a, u) => { const r = avg(u.email);
     return [`<h1>My account</h1><p>Manage your account details and preferences.</p><div class="neu item profile-summary">${avatar(u, "avatar-large")}<div><small class="role-kicker-dark">${roleLabel(u)}</small><h2>${u.name}</h2><p>${u.email}</p>${u.role !== "admin" ? badge(u) : `<span class="pill">Administrator account</span>`}</div></div>
     <div class="stack"><small>ACCOUNT</small><a class="neu item card" href="#/personal"><div><b>Personal information</b><p>Update your details</p></div>›</a>
     <a class="neu item card" href="#/verification"><div><b>Verification center</b><p>Check your steps</p></div>›</a><a class="neu item card" href="#/alerts"><div><b>Notifications</b><p>Unread account, message, and system activity</p></div>›</a>
-    <a class="neu item card" href="#/messages"><div><b>Messages</b><p>${u.role === "admin" ? "View user messages and admin ratings" : "Message AgriRenta admin support"}</p></div>›</a>
+    <a class="neu item card" href="#/messages"><div><b>Messages</b><p>${u.role === "admin" ? "View user messages and administrator ratings" : "Message AgriRenta administrator support"}</p></div>›</a>
     ${u.role !== "admin" ? `<a href="#/reviews" class="neu item card"><div><span style="font-family:var(--fh);font-size:2.5rem">${r ? r.v.toFixed(1) : "–"}</span> ${stars(r ? r.v : 0)}<p>${r ? r.n + " reviews" : "No reviews yet"}</p></div>›</a>` : ""}
     <button class="btn btn-soft btn-danger" data-act="logout">Log Out</button></div>`, "app"]; },
 
   personal: (a, u) => { return [`<a href="#/profile">← Back to account</a><h1>Personal information</h1><p>Update your contact and account details.</p>
     <div class="neu item profile-summary">${avatar(u, "avatar-large")}<div><small class="role-kicker-dark">${roleLabel(u)}</small><h2>${u.name}</h2><p>${u.email}</p></div></div>
     <form data-form="personal" class="neu stack"><h3>Personal information</h3><label>Full name</label><input name="name" value="${u.name}" required><label>Email address</label><input name="email" type="email" value="${u.email}" required><label>Mobile number</label><input name="phone" type="tel" value="${u.phone || ''}" required><label>Address</label><input name="address" value="${u.address || ''}" placeholder="Barangay, municipality, province"><button class="btn btn-primary">Save personal information</button></form>
-    <form data-form="password" class="neu stack"><h3>Change password</h3><label>Current password</label><input type="password" name="currentPassword" required autocomplete="current-password"><label>New password</label><input type="password" name="newPassword" minlength="8" required autocomplete="new-password"><label>Confirm new password</label><input type="password" name="confirmPassword" minlength="8" required autocomplete="new-password"><button class="btn btn-soft">Update password</button></form>
+    <form data-form="password" class="neu stack"><h3>Change password</h3>
+    ${passwordField("currentPassword", "currentPassword", "Current password", "current-password")}
+    ${passwordField("newPassword", "newPassword", "New password", "new-password")}
+    <small class="password-guidance">Use 8+ characters with uppercase and lowercase letters, a number, and a special character.</small>
+    ${passwordField("confirmNewPassword", "confirmPassword", "Confirm new password", "new-password")}
+    <button class="btn btn-soft">Update password</button></form>
     <form data-form="avatar" class="neu stack"><h3>Profile picture</h3><p>Choose a photo to save to your AgriRenta profile so other users can recognize your account. Photos are automatically optimized for storage.</p><label>Upload profile picture</label><input type="file" name="avatar" accept="image/*" required><button class="btn btn-primary">Save profile picture</button></form>`, "app"]; },
 
   messages: (a, u) => {
@@ -777,7 +984,7 @@ The system is still being improved to ensure better performance, reliability, se
     const otherEmail = directEmails.find(em => em !== u.email) || (selected !== u.email ? selected : "");
     const other = usr(otherEmail);
     const rows = db.messages.filter(m => threadOf(m) === selected).sort((x,y) => new Date(x.time)-new Date(y.time));
-    const threadLabel = (thread) => { if (thread.startsWith("direct:")) { const pair = thread.slice(7).split("|"); const peer = pair.find(em => em !== u.email) || pair[0]; return usr(peer).name + " · " + roleLabel(usr(peer)); } return usr(thread).name || "AgriRenta Admin Support"; };
+    const threadLabel = (thread) => { if (thread.startsWith("direct:")) { const pair = thread.slice(7).split("|"); const peer = pair.find(em => em !== u.email) || pair[0]; return usr(peer).name + " · " + roleLabel(usr(peer)); } return usr(thread).name || "AgriRenta Administrator Support"; };
     const target = selected.startsWith("direct:") ? selected : (admin ? selected : u.email);
     const contactRow = (person, thread, subtitle) => `<div class="messenger-contact-row" data-chat-contact data-search="${escapeHtml([person.name, person.email, person.role, person.phone].join(" "))}">
       <a class="messenger-avatar-link" href="${profileHref(person.email, u)}" aria-label="View ${escapeHtml(person.name)} profile">${avatar(person)}</a>
@@ -786,20 +993,20 @@ The system is still being improved to ensure better performance, reliability, se
       ? adminThreads.map(email => contactRow(usr(email), email, `${roleLabel(usr(email))} · Support`)).join("")
       : directContacts.map(person => contactRow(person, directKey(person.email), roleLabel(person))).join("");
     const supportActive = !admin && selected === u.email;
-    const headerPerson = selected.startsWith("direct:") ? other : (admin ? usr(selected) : { name: "AgriRenta Admin Support", role: "admin", avatar: "" });
+    const headerPerson = selected.startsWith("direct:") ? other : (admin ? usr(selected) : { name: "AgriRenta Administrator Support", role: "admin", avatar: "" });
     const headerProfile = selected.startsWith("direct:") ? profileHref(otherEmail, u) : admin ? profileHref(selected, u) : "";
-    return [`<div class="head"><div><h1><i class="bi bi-chat-dots"></i> Messages</h1><p>${admin ? "Read and reply to customer and equipment owner conversations." : "Contact the equipment owner or send concerns and suggestions to AgriRenta admin."}</p></div></div>
-    <div class="messenger-layout"><aside class="neu messenger-contacts"><div class="messenger-contacts-title">Chats</div><label class="sr-only" for="chatSearch">Search users in chats</label><input id="chatSearch" class="chat-search" type="search" placeholder="Search by name..." autocomplete="off">${!admin ? `<div class="messenger-section-label">${u.role === "customer" ? "Equipment owners" : "Customers"}</div><div class="messenger-contact-list">${contactRows || '<p class="empty-state">No users available yet.</p>'}</div><div class="messenger-section-label">Support</div><a class="messenger-contact ${supportActive ? "on" : ""}" href="#/messages">${avatar({name:"AgriRenta Admin Support",role:"admin"})}<span><b>Admin support</b><small>Private conversation with AgriRenta</small></span></a>` : `<div class="messenger-section-label">Customer & owner support</div><div class="messenger-contact-list">${contactRows || '<p class="empty-state">No users available yet.</p>'}</div>`}</aside>
-    <section class="neu message-thread"><div class="message-thread-head">${headerProfile ? `<a class="messenger-avatar-link" href="${headerProfile}" aria-label="View ${escapeHtml(headerPerson.name)} profile">${avatar(headerPerson)}</a>` : avatar(headerPerson)}<span><b>${escapeHtml(selected.startsWith("direct:") ? other.name : (admin ? threadLabel(selected) : "AgriRenta Admin Support"))}</b><small>${selected.startsWith("direct:") ? roleLabel(other) : (admin ? roleLabel(usr(selected)) : "Admin support")}</small></span></div><div class="message-list">${rows.map(m => `<article class="message-bubble ${m.author === u.email ? "mine" : ""}"><small>${m.author === u.email ? "You" : (admin || selected.startsWith("direct:") ? escapeHtml(usr(m.author).name) : "AgriRenta Admin")} · ${new Date(m.time).toLocaleString()}</small><p>${escapeHtml(m.text)}</p></article>`).join("") || `<p class="empty-state">No messages yet. Send the first message below.</p>`}</div>
+    return [`<div class="head"><div><h1><i class="bi bi-chat-dots"></i> Messages</h1><p>${admin ? "Read and reply to customer and equipment owner conversations." : "Contact the equipment owner or send concerns and suggestions to AgriRenta administrator."}</p></div></div>
+    <div class="messenger-layout"><aside class="neu messenger-contacts"><div class="messenger-contacts-title">Chats</div><label class="sr-only" for="chatSearch">Search users in chats</label><input id="chatSearch" class="chat-search" type="search" placeholder="Search by name..." autocomplete="off">${!admin ? `<div class="messenger-section-label">${u.role === "customer" ? "Equipment owners" : "Customers"}</div><div class="messenger-contact-list">${contactRows || '<p class="empty-state">No users available yet.</p>'}</div><div class="messenger-section-label">Support</div><a class="messenger-contact ${supportActive ? "on" : ""}" href="#/messages">${avatar({name:"AgriRenta Administrator Support",role:"admin"})}<span><b>Administrator support</b><small>Private conversation with AgriRenta</small></span></a>` : `<div class="messenger-section-label">Customer & owner support</div><div class="messenger-contact-list">${contactRows || '<p class="empty-state">No users available yet.</p>'}</div>`}</aside>
+    <section class="neu message-thread"><div class="message-thread-head">${headerProfile ? `<a class="messenger-avatar-link" href="${headerProfile}" aria-label="View ${escapeHtml(headerPerson.name)} profile">${avatar(headerPerson)}</a>` : avatar(headerPerson)}<span><b>${escapeHtml(selected.startsWith("direct:") ? other.name : (admin ? threadLabel(selected) : "AgriRenta Administrator Support"))}</b><small>${selected.startsWith("direct:") ? roleLabel(other) : (admin ? roleLabel(usr(selected)) : "Administrator support")}</small></span></div><div class="message-list">${rows.map(m => `<article class="message-bubble ${m.author === u.email ? "mine" : ""}"><small>${m.author === u.email ? "You" : (admin || selected.startsWith("direct:") ? escapeHtml(usr(m.author).name) : "AgriRenta Administrator")} · ${new Date(m.time).toLocaleString()}</small><p>${escapeHtml(m.text)}</p></article>`).join("") || `<p class="empty-state">No messages yet. Send the first message below.</p>`}</div>
     <form data-form="message" data-to="${target}" class="message-compose"><label>Message</label><textarea name="text" rows="3" maxlength="2000" placeholder="Write your message..." required></textarea><button class="btn btn-primary"><i class="bi bi-send"></i> Send message</button></form></section></div>
-    ${admin ? (() => { const ar = db.reviews.filter(x => x.type === "admin" && x.to === u.email); const average = ar.length ? ar.reduce((sum,x)=>sum+x.stars,0)/ar.length : 0; return `<section class="neu" style="margin-top:1rem"><h2>Admin support ratings</h2><p>${ar.length ? `${average.toFixed(1)} out of 5 · ${ar.length} rating(s)` : "No admin ratings yet."}</p>${ar.map(x=>`<div class="neu item"><div><b>${usr(x.from).name}</b><p>${stars(x.stars)} ${x.stars}/5</p><p>${String(x.text||"")}</p><small>${x.date||""}</small></div></div>`).join("")}</section>`; })() : (!selected.startsWith("direct:") ? `<section class="neu admin-rating" style="margin-top:1rem"><h3>Rate AgriRenta Admin Support</h3><p>How helpful was our admin team?</p><div class="starpick" aria-label="Select a rating">${[1,2,3,4,5].map(n=>`<button type="button" class="${n <= (db.reviews.find(x=>x.type === "admin" && x.from === u.email)?.stars || rate.stars) ? "on" : ""}" data-act="adminstar" data-v="${n}" aria-label="${n} star${n===1?"":"s"}">★</button>`).join("")}</div><b>${db.reviews.find(x=>x.type === "admin" && x.from === u.email) ? "Update your rating" : "Your rating helps us improve"}</b><form data-form="adminrating" class="stack"><textarea name="text" rows="2" maxlength="1000" placeholder="Optional feedback about admin support">${String(db.reviews.find(x=>x.type === "admin" && x.from === u.email)?.text || "")}</textarea><button class="btn btn-primary">${db.reviews.find(x=>x.type === "admin" && x.from === u.email) ? "Update admin rating" : "Submit admin rating"}</button></form></section>` : "")}`, "app"];
+    ${admin ? (() => { const ar = db.reviews.filter(x => x.type === "admin" && x.to === u.email); const average = ar.length ? ar.reduce((sum,x)=>sum+x.stars,0)/ar.length : 0; return `<section class="neu" style="margin-top:1rem"><h2>Administrator support ratings</h2><p>${ar.length ? `${average.toFixed(1)} out of 5 · ${ar.length} rating(s)` : "No administrator ratings yet."}</p>${ar.map(x=>`<div class="neu item"><div><b>${usr(x.from).name}</b><p>${stars(x.stars)} ${x.stars}/5</p><p>${String(x.text||"")}</p><small>${x.date||""}</small></div></div>`).join("")}</section>`; })() : (!selected.startsWith("direct:") ? `<section class="neu admin-rating" style="margin-top:1rem"><h3>Rate AgriRenta Administrator Support</h3><p>How helpful was our administrator team?</p><div class="starpick" aria-label="Select a rating">${[1,2,3,4,5].map(n=>`<button type="button" class="${n <= (db.reviews.find(x=>x.type === "admin" && x.from === u.email)?.stars || rate.stars) ? "on" : ""}" data-act="adminstar" data-v="${n}" aria-label="${n} star${n===1?"":"s"}">★</button>`).join("")}</div><b>${db.reviews.find(x=>x.type === "admin" && x.from === u.email) ? "Update your rating" : "Your rating helps us improve"}</b><form data-form="adminrating" class="stack"><textarea name="text" rows="2" maxlength="1000" placeholder="Optional feedback about administrator support">${String(db.reviews.find(x=>x.type === "admin" && x.from === u.email)?.text || "")}</textarea><button class="btn btn-primary">${db.reviews.find(x=>x.type === "admin" && x.from === u.email) ? "Update administrator rating" : "Submit administrator rating"}</button></form></section>` : "")}`, "app"];
   },
   owner: (emailArg, u) => { const email = emailArg ? decodeURIComponent(emailArg) : ""; const owner = usr(email); if (!email || owner.role !== "owner") return V.explore(); const ownProfile = u?.email === email; const rs = db.reviews.filter(x => x.to === email && x.type !== "admin"); const r = avg(email); return [`<a href="#/explore">← Back to equipment</a><div class="neu item profile-summary">${avatar(owner, "avatar-large")}<div><small class="role-kicker-dark">Equipment Owner</small><h1>${escapeHtml(owner.name)}</h1><p>${ownProfile ? escapeHtml(owner.email) : "AgriRenta member"}</p>${badge(owner)}<p>${r ? stars(r.v) + " " + r.v.toFixed(1) + " · " + r.n + " reviews" : "No customer reviews yet"}</p></div></div>${ownerListingPanel(email, ownProfile)}<h2>Customer reviews</h2><div class="stack">${rs.map(x => `<div class="neu"><div class="row"><b><a href="#/member/${encodeURIComponent(x.from)}">${avatar(usr(x.from))} ${escapeHtml(usr(x.from).name)}</a></b><small>${x.date || ""}</small></div>${stars(x.stars)}<p>${escapeHtml(x.text || "")}</p></div>`).join("") || "<p>No customer reviews yet.</p>"}</div>${ownProfile ? `<a class="btn btn-primary" href="#/listings">Manage my listings</a>` : `<a class="btn btn-primary" href="#/messages/${encodeURIComponent(email)}">Message owner</a>`}`, "app"]; },
   member: (emailArg, u) => { const email = emailArg ? decodeURIComponent(emailArg) : ""; const person = db.users.find(x => x.email === email && x.role !== "admin"); if (!person) return V.explore(); const r = avg(email); const rs = db.reviews.filter(x => x.to === email && x.type !== "admin"); const ownProfile = u?.email === email; return [`<a href="#/explore">← Back</a><div class="neu item profile-summary">${avatar(person, "avatar-large")}<div><small class="role-kicker-dark">${roleLabel(person)}</small><h1>${escapeHtml(person.name)}</h1><p>AgriRenta member</p>${badge(person)}<p>${r ? stars(r.v) + " " + r.v.toFixed(1) + " · " + r.n + " ratings" : "No ratings yet"}</p></div></div>${person.role === "owner" ? ownerListingPanel(email, ownProfile) : ""}<h2>Ratings and feedback</h2><div class="stack">${rs.map(x => `<div class="neu"><div class="row"><b><a href="#/member/${encodeURIComponent(x.from)}">${avatar(usr(x.from))} ${escapeHtml(usr(x.from).name)}</a></b><small>${x.date || ""}</small></div>${stars(x.stars)}<p>${escapeHtml(x.text || "")}</p></div>`).join("") || "<p>No ratings or feedback yet.</p>"}</div>${person.email !== db.me ? `<a class="btn btn-primary" href="#/messages/${encodeURIComponent(email)}">Message ${person.role === "owner" ? "owner" : "customer"}</a>` : person.role === "owner" ? `<a class="btn btn-primary" href="#/listings">Manage my listings</a>` : ""}`, "app"]; },
   user: (emailArg) => { const email = emailArg ? decodeURIComponent(emailArg) : ""; const person = db.users.find(x => x.email === email); if (!person) return [`<a href="#/users">← Back to users</a><p>User not found.</p>`, "app"]; const reviews = db.reviews.filter(x => x.to === email && x.type !== "admin"); const listings = db.eq.filter(x => x.owner === email); const docs = person.idDocs; return [`<a href="#/users">← Back to users</a><div class="neu item profile-summary">${avatar(person, "avatar-large")}<div><small class="role-kicker-dark">${roleLabel(person)}</small><h1>${escapeHtml(person.name)}</h1><p>${escapeHtml(person.email)}</p><p>Phone: ${escapeHtml(person.phone || "Not provided")} · Address: ${escapeHtml(person.address || "Not provided")}</p>${person.role === "admin" ? "" : badge(person)}<p>Government ID: ${escapeHtml(person.v?.id || "none")} · Selfie: ${escapeHtml(person.v?.selfie || "none")}</p></div></div>
     ${docs ? `<section class="neu"><h2>Identity documents · ${escapeHtml(docs.type || "Government ID")}</h2><p>Submitted ${docs.submittedAt ? new Date(docs.submittedAt).toLocaleString() : ""}</p>${idDocsHtml(person)}</section>` : `<section class="neu"><h2>Identity documents</h2><p>No ID images submitted.</p></section>`}
     ${person.v?.id === "review" ? `<button class="btn btn-primary btn-sm" data-act="vok" data-v="${escapeHtml(email)}|ID + selfie">Approve ID</button> <button class="btn btn-soft btn-sm btn-danger" data-act="vno" data-v="${escapeHtml(email)}|ID + selfie">Reject ID</button>` : ""}
-    ${person.role === "owner" ? `<h2 style="margin-top:1rem">Owner equipment and documents</h2><div class="stack">${listings.map(item => `<section class="neu"><a class="admin-equipment-preview" href="#/equipment/${encodeURIComponent(item.id)}"><div class="item">${avatar(person)}<div><b>${escapeHtml(item.name)}</b><p>${escapeHtml(item.spec)} · ${peso(item.price)} / day · ${escapeHtml(item.location || "Location not set")}</p><p>Status: ${escapeHtml(item.status || "approved")} · ${item.visible === false ? "Hidden from customers" : "Visible to customers"}</p></div></div></a><div class="review-files"><div><b>Equipment photos · click to view listing</b><div class="review-thumbs">${(item.photos || []).map((photo,index) => `<a href="#/equipment/${encodeURIComponent(item.id)}" aria-label="View ${escapeHtml(item.name)} listing"><img src="${photo.data}" alt="Equipment photo ${index+1}"></a>`).join("") || (item.img ? `<a href="#/equipment/${encodeURIComponent(item.id)}" aria-label="View ${escapeHtml(item.name)} listing"><img src="${img(item.img)}" alt="${escapeHtml(item.name)}"></a>` : "<p>Not attached</p>")}</div></div><div class="review-docs"><b>OR/CR</b>${item.orcr ? `<a href="${item.orcr.data}" target="_blank" rel="noopener">${escapeHtml(item.orcr.name || "View OR/CR")}</a>` : "<p>Not attached</p>"}<b>Permit</b>${item.permit ? `<a href="${item.permit.data}" target="_blank" rel="noopener">${escapeHtml(item.permit.name || "View permit")}</a>` : "<p>Not provided</p>"}</div></div>${item.status === "review" ? `<button class="btn btn-primary btn-sm" data-act="eqapprove" data-v="${item.id}">Approve listing</button> <button class="btn btn-soft btn-sm btn-danger" data-act="eqreject" data-v="${item.id}">Reject listing</button>` : ""}</section>`).join("") || "<p>No owner listings.</p>"}</div>${person.v?.papers === "review" ? `<button class="btn btn-primary btn-sm" data-act="vok" data-v="${escapeHtml(email)}|Equipment papers">Approve equipment papers</button> <button class="btn btn-soft btn-sm btn-danger" data-act="vno" data-v="${escapeHtml(email)}|Equipment papers">Reject equipment papers</button>` : ""}` : ""}
+    ${person.role === "owner" ? `<h2 style="margin-top:1rem">Owner equipment and documents</h2><div class="stack">${listings.map(item => `<section class="neu"><a class="admin-equipment-preview" href="#/equipment/${encodeURIComponent(item.id)}"><div class="item">${avatar(person)}<div><b>${escapeHtml(item.name)}</b><p>${escapeHtml(item.spec)} · ${peso(item.price)} / day · ${escapeHtml(item.location || "Location not set")}</p><p>Status: ${escapeHtml(item.status || "approved")} · ${item.visible === false ? "Hidden from customers" : "Visible to customers"}</p></div></div></a><div class="review-files"><div><b>Equipment photos · click to view listing</b><div class="review-thumbs">${(item.photos || []).map((photo,index) => `<a href="#/equipment/${encodeURIComponent(item.id)}" aria-label="View ${escapeHtml(item.name)} listing"><img src="${escapeHtml(img(photo.data))}" alt="Equipment photo ${index+1}"></a>`).join("") || (item.img ? `<a href="#/equipment/${encodeURIComponent(item.id)}" aria-label="View ${escapeHtml(item.name)} listing"><img src="${escapeHtml(img(item.img))}" alt="${escapeHtml(item.name)}"></a>` : "<p>Not attached</p>")}</div></div><div class="review-docs"><b>OR/CR</b>${item.orcr ? `<a ${privateAssetAttributes(item.orcr.data,"href")} target="_blank" rel="noopener">${escapeHtml(item.orcr.name || "View OR/CR")}</a>` : "<p>Not attached</p>"}<b>Permit</b>${item.permit ? `<a ${privateAssetAttributes(item.permit.data,"href")} target="_blank" rel="noopener">${escapeHtml(item.permit.name || "View permit")}</a>` : "<p>Not provided</p>"}</div></div>${item.status === "review" ? `<button class="btn btn-primary btn-sm" data-act="eqapprove" data-v="${item.id}">Approve listing</button> <button class="btn btn-soft btn-sm btn-danger" data-act="eqreject" data-v="${item.id}">Reject listing</button>` : ""}</section>`).join("") || "<p>No owner listings.</p>"}</div>${person.v?.papers === "review" ? `<button class="btn btn-primary btn-sm" data-act="vok" data-v="${escapeHtml(email)}|Equipment papers">Approve equipment papers</button> <button class="btn btn-soft btn-sm btn-danger" data-act="vno" data-v="${escapeHtml(email)}|Equipment papers">Reject equipment papers</button>` : ""}` : ""}
     <h2 style="margin-top:1rem">Ratings and feedback</h2><div class="stack">${reviews.map(review => `<div class="neu"><div class="row"><b>${escapeHtml(usr(review.from).name)}</b><small>${escapeHtml(review.date || "")}</small></div>${stars(review.stars)}<p>${escapeHtml(review.text || "")}</p></div>`).join("") || "<p>No ratings or feedback yet.</p>"}</div>`, "app"]; },
   reviews: (a, u) => { const rs = db.reviews.filter((x) => x.to === u.email), r = avg(u.email);
     return [`<a href="#/profile">← Back</a><h1>Ratings & reviews</h1><div class="neu item"><div><span style="font-family:var(--fh);font-size:4rem">${r ? r.v.toFixed(1) : "–"}</span><br>${stars(r ? r.v : 0)}<p>${rs.length} reviews</p></div>
@@ -807,18 +1014,51 @@ The system is still being improved to ensure better performance, reliability, se
     <h2 style="margin-top:1.2rem">Recent reviews</h2><div class="stack">${rs.map((x) => `<div class="neu"><div class="row"><b>${usr(x.from).name}</b><small>${x.date}</small></div>${stars(x.stars)}<p>${x.text}</p></div>`).join("") || "<p>No reviews yet.</p>"}</div>`, "app"]; },
 
   /* owner */
-  dashboard: (a, u) => { const reqs = db.bookings.filter((b) => b.owner === u.email), active = reqs.filter((b) => b.status === "approved").length, earn = reqs.filter((b) => b.status === "returned").reduce((s, b) => s + b.total * 0.9, 0), r = avg(u.email);
-    const mineWithdrawals = db.withdrawals.filter(w=>w.owner===u.email), reserved = mineWithdrawals.filter(w=>["pending","approved"].includes(w.status)).reduce((s,w)=>s+Number(w.amount||0),0), paidOut=mineWithdrawals.filter(w=>w.status==="paid").reduce((s,w)=>s+Number(w.amount||0),0), balance=Math.max(0,earn-reserved-paidOut);
+  dashboard: (a, u) => {
+    const reqs = db.bookings.filter((b) => b.owner === u.email);
+    const active = reqs.filter((b) => b.status === "approved").length;
+    const paidRentals = reqs.filter(commissionEligibleBooking);
+    const earn = paidRentals.reduce((sum, booking) => sum + Number(booking.total || 0) * (1 - 0.1), 0);
+    const r = avg(u.email);
+    const settings = commissionSettings();
+    const commissions = db.commissionRecords.filter(record => record.owner === u.email);
+    const payments = db.commissionPayments.filter(payment => payment.owner === u.email);
+    const outstanding = commissions.filter(record => !["waived", "disputed"].includes(record.status)).reduce((sum, record) => sum + commissionRemaining(record), 0);
+    const paidCommission = commissions.reduce((sum, record) => sum + Number(record.paidAmount || 0), 0);
+    const overdue = commissions.filter(record => commissionDisplayStatus(record) === "Overdue").reduce((sum, record) => sum + commissionRemaining(record), 0);
+    const disputed = commissions.filter(record => record.status === "disputed").reduce((sum, record) => sum + commissionRemaining(record), 0);
+    const pendingPayment = payments.some(payment => payment.status === "pending_verification");
+    const commissionPanel = `<section id="mycommission" class="neu commission-panel"><h2>My Commission</h2>
+      <p><b>How it works:</b> AgriRenta records 10% of the rental total after the rental is returned and payment is confirmed. Pay the amount shown by its due date (${settings.gracePeriodDays} calendar days after it is earned). Unpaid commission past its due date pauses your new bookings until it is settled. Submitting a dispute pauses enforcement while the administrator reviews it. You will receive an in-app message and notification for each commission.</p>
+      <p class="server-mode-warning" role="note">The GCash checkout is an academic simulation only. It does not connect to GCash or transfer real money. Never enter a real GCash PIN or password.</p>
+      ${serverApiEnabled ? "" : `<p class="server-mode-warning" role="status">Commission payment, dispute, and verification actions require a connected Supabase backend. Local-only mode cannot safely manage commission balances.</p>`}
+      <div class="grid stats"><div class="neu stat"><b>${peso(outstanding)}</b>Outstanding</div><div class="neu stat"><b>${peso(paidCommission)}</b>Settled (includes simulation)</div><div class="neu stat"><b>${peso(overdue)}</b>Overdue</div><div class="neu stat"><b>${peso(disputed)}</b>Under dispute</div></div>
+      ${pendingPayment ? `<p class="server-mode-warning" role="status">A manual payment is pending administrator review. Wait for that review before starting another GCash simulation.</p>` : ""}
+      <h3 style="margin-top:1rem">Commission records</h3><div class="stack">${commissions.map(record => {
+        const status = commissionDisplayStatus(record);
+        const booking = db.bookings.find(item => item.ref === record.bookingRef);
+        const equipment = booking ? bookingEquipment(booking) : { name:"Equipment rental" };
+        const remaining = commissionRemaining(record);
+        const balanceLabel = record.status === "waived" ? "Waived"
+          : record.status === "disputed" ? "Under dispute"
+            : remaining < 0.005 ? "Remaining commission" : "Outstanding";
+        const settledLabel = commissionHasSimulationPayment(record) ? "Simulated" : "Settled";
+        const canPaySimulation = remaining >= 0.01 && !["disputed", "waived"].includes(record.status);
+        return `<article id="commission-${escapeHtml(record.id)}" class="neu commission-record"><div><b>${escapeHtml(record.bookingRef)} · ${escapeHtml(equipment.name)}</b><p>Customer paid ${peso(record.rentalAmount)} · Commission ${(Number(record.rate || .1) * 100).toFixed(0)}% = ${peso(record.amount)}</p><p>${balanceLabel}: <b>${peso(remaining)}</b> · <span class="pill commission-status">${status}</span></p><small>Earned ${record.earnedAt ? new Date(record.earnedAt).toLocaleString() : "—"} · Due ${record.dueAt ? new Date(record.dueAt).toLocaleString() : "—"}${record.paidAmount ? ` · ${settledLabel} ${peso(record.paidAmount)}` : ""}</small>
+        ${canPaySimulation ? `<button class="btn btn-primary btn-sm" type="button" data-act="paycommissiondemo" data-v="${escapeHtml(record.id)}" ${!serverApiEnabled || pendingPayment ? "disabled" : ""}>Pay ${peso(remaining)} commission via GCash (simulation)</button>` : ""}
+        ${record.status === "disputed" ? `<p>Dispute submitted: ${escapeHtml(record.disputeReason || "")} · Pending administrator review</p>` : commissionRemaining(record) > 0 && record.status !== "waived" ? `<form data-form="commissiondispute" data-commission-id="${escapeHtml(record.id)}" class="stack"><label>Dispute this commission</label><textarea name="reason" minlength="5" maxlength="1000" required placeholder="Explain why this commission record is incorrect."></textarea><button class="btn btn-soft btn-sm">Submit dispute</button></form>` : ""}</div></article>`;
+      }).join("") || "<p>No eligible completed rentals yet.</p>"}</div>
+      <h3 style="margin-top:1rem">Payment history</h3><div class="stack">${payments.map(payment => `<div id="payment-${escapeHtml(payment.id)}" class="neu item"><div><b>${peso(payment.amount)} · Reference ${escapeHtml(payment.reference)}</b><p>${payment.source === "demo" ? "GCash simulation · no real money transferred" : `Submitted ${new Date(payment.createdAt).toLocaleString()}`}</p>${payment.reviewNote ? `<small>${escapeHtml(payment.reviewNote)}</small>` : ""}</div><span class="pill commission-status">${payment.source === "demo" ? "Simulation only" : escapeHtml(payment.status.replaceAll("_"," "))}</span></div>`).join("") || "<p>No commission payments yet.</p>"}</div></section>`;
     return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <section class="platform-global-search"><label class="sr-only" for="ownerGlobalSearch">Search users, equipment, or locations</label><input id="ownerGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="ownerGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <div class="promo owner-banner"><video autoplay muted loop playsinline preload="metadata" poster="images/ownerbanner.png" aria-label="AgriRenta equipment owner banner"><source src="ownerbanner.mp4" type="video/mp4"></video></div>
     <div class="head"><div><h2>Owner portal</h2></div><span class="pill">${isVerified(u)?'ID verified owner':'Verification pending'}</span></div>
-    <div class="grid stats"><a class="neu stat stat-link" href="#/listings"><b>${String(db.eq.filter((e) => e.owner === u.email && e.status !== 'rejected').length).padStart(2, "0")}</b>Equipment listed <small>Open my listings →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(reqs.filter((b) => b.status === "pending").length).padStart(2, "0")}</b>Pending requests <small>Review requests →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(active).padStart(2, "0")}</b>Active rentals <small>View rentals →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="cashout"><b>${peso(earn)}</b>Earnings (after 10% commission) <small>Available to cash out: ${peso(balance)} →</small></a></div>
+    <div class="grid stats"><a class="neu stat stat-link" href="#/listings"><b>${String(db.eq.filter((e) => e.owner === u.email && e.status !== 'rejected').length).padStart(2, "0")}</b>Equipment listed <small>Open my listings →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(reqs.filter((b) => b.status === "pending").length).padStart(2, "0")}</b>Pending requests <small>Review requests →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(active).padStart(2, "0")}</b>Active rentals <small>View rentals →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="mycommission"><b>${peso(earn)}</b>Estimated owner share (90%) <small>After 10% commission · View commission →</small></a></div>
     <a href="#/reviews" class="neu item card reputation-card"><span class="ico">★</span><div><small>Your reputation</small><h2>${r ? r.v.toFixed(1) : "–"} ${stars(r ? r.v : 0)}</h2><p>${r ? r.n : 0} reviews · ${isVerified(u) ? "ID verified owner" : "Verification pending"}</p></div></a>
-    <section id="cashout" class="neu cashout-panel"><h2>Cash out earnings</h2><p>Available balance: <b>${peso(balance)}</b>. Requests are sent to admin for manual processing.</p><form data-form="cashout" class="stack"><label>Amount (₱)</label><input type="number" name="amount" min="100" max="${balance.toFixed(2)}" step="0.01" required ${balance<100?'disabled':''}><label>Cash-out method</label><select name="method" required><option value="GCash">GCash</option><option value="Maya">Maya</option><option value="PayPal">PayPal</option></select><label>Account name</label><input name="accountName" required placeholder="Name registered to wallet"><label>GCash / Maya number or PayPal email</label><input name="accountRef" required placeholder="Wallet number or PayPal email"><button class="btn btn-primary" ${balance<100?'disabled':''}>Request cash out</button></form><h3 style="margin-top:1rem">Cash-out history</h3><div class="stack">${mineWithdrawals.map(w=>`<div class="neu item"><div><b>${peso(w.amount)} · ${w.method}</b><p>${w.accountRef}</p><small>${new Date(w.createdAt).toLocaleString()}</small></div>${pill(w.status)}</div>`).join('')||'<p>No cash-out requests yet.</p>'}</div></section>
+    ${commissionPanel}
     <h2 id="rental-requests" style="margin-top:1.4rem">Rental requests</h2><div class="stack">${reqs.map((b) => { const c = usr(b.renter), e = E(b.eq) || bookingEquipment(b), rr = avg(c.email);
-      return `<div class="neu"><div class="item"><a href="#/member/${encodeURIComponent(c.email)}" aria-label="View ${escapeHtml(c.name)} profile">${avatar(c)}</a><div><b><a href="#/member/${encodeURIComponent(c.email)}">${escapeHtml(c.name)}</a></b> ${isVerified(c) ? "✓" : ""}<p>${rr ? stars(rr.v) + " " + rr.v.toFixed(1) : "New renter"}</p></div>${pill(b.status)}</div><p>${escapeHtml(e.name)} · ${fmt(b.start)} – ${fmt(b.end)} · ${peso(b.total)}</p><p><b>Payment:</b> ${escapeHtml(b.pay || "Not selected")} · <b>Status:</b> ${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</p>
-      ${b.status === "pending" ? `<button class="btn btn-primary btn-sm" data-act="approve" data-v="${b.ref}">Approve</button> <button class="btn btn-soft btn-sm btn-danger" data-act="decline" data-v="${b.ref}">Decline</button>` : ""}
+      return `<div id="booking-${escapeHtml(b.ref)}" class="neu"><div class="item"><a href="#/member/${encodeURIComponent(c.email)}" aria-label="View ${escapeHtml(c.name)} profile">${avatar(c)}</a><div><b><a href="#/member/${encodeURIComponent(c.email)}">${escapeHtml(c.name)}</a></b> ${isVerified(c) ? "✓" : ""}<p>${rr ? stars(rr.v) + " " + rr.v.toFixed(1) : "New renter"}</p></div>${pill(b.status)}</div><p>${escapeHtml(e.name)} · ${fmt(b.start)} – ${fmt(b.end)} · ${peso(b.total)}</p><p><b>Payment:</b> ${escapeHtml(b.pay || "Not selected")} · <b>Status:</b> ${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</p>
+      ${b.status === "pending" ? `<button class="btn btn-primary btn-sm" data-act="approve" data-v="${b.ref}">Approve</button> ${b.pay === "GCash" ? `<p class="payment-note" role="note">GCash requests cannot be declined. Only COD requests can be declined.</p>` : `<button class="btn btn-soft btn-sm btn-danger" data-act="decline" data-v="${b.ref}">Decline</button>`}` : ""}
       ${b.pay === "Cash on Delivery (COD)" && b.paymentStatus !== "paid" && b.status !== "declined" ? `<button class="btn btn-soft btn-sm" data-act="markpaid" data-v="${b.ref}">Mark payment received</button>` : ""}
       ${b.status === "approved" ? `<button class="btn btn-primary btn-sm" data-act="returned" data-v="${b.ref}">Mark returned</button>` : ""}
       ${b.status === "returned" && !b.ratedRenter ? `<a class="btn btn-primary btn-sm" href="#/rate/${b.ref}">Rate renter</a>` : ""}</div>`; }).join("") || "<p>No requests yet.</p>"}</div>`, "app"]; },
@@ -827,7 +1067,7 @@ The system is still being improved to ensure better performance, reliability, se
   "edit-equipment": (id, u) => {
     const item = db.eq.find(e => String(e.id) === String(decodeURIComponent(id || "")) && e.owner === u.email);
     if (!item) return [`<a href="#/listings">← Back to my listings</a><section class="neu"><h2>Listing not found</h2><p>This equipment does not belong to your account.</p></section>`, "app"];
-    return [`<a href="#/listings">← Back to my listings</a><h1>Edit equipment</h1><p>Update listing details or replace the main photo. Changes are sent for admin review before customers can see them.</p>
+    return [`<a href="#/listings">← Back to my listings</a><h1>Edit equipment</h1><p>Update listing details or replace the main photo. Changes are sent for administrator review before customers can see them.</p>
       <form data-form="equipmentedit" class="neu stack equipment-upload-form"><input type="hidden" name="eq" value="${escapeHtml(item.id)}">
       <img class="equipment-edit-preview" src="${img(item.img)}" alt="${escapeHtml(item.name)} photo">
       <label>Equipment name</label><input name="name" value="${escapeHtml(item.name)}" required>
@@ -839,21 +1079,60 @@ The system is still being improved to ensure better performance, reliability, se
       <button class="btn btn-primary">Save and send for review</button></form>`, "app"];
   },
 
-  papers: (a, u) => { draftUnavailableDates=[]; return [`<h1>Equipment</h1><p>Add your equipment, choose unavailable dates, and submit the equipment papers together for admin review.</p><form data-form="equipmentupload" class="neu stack equipment-upload-form"><h2>Add equipment</h2><div class="days"><div><label>Equipment name</label><input name="name" required placeholder="e.g. Farm Tractor"></div><div><label>Details</label><input name="spec" placeholder="e.g. 50 HP · Diesel"></div></div><div class="days"><div><label>Type</label><select name="cat" required>${CATS.slice(1).map(c=>`<option value="${c}">${c}</option>`).join('')}</select><label>Or enter a custom type</label><input name="catCustom" placeholder="e.g. Rice Transplanter"></div><div><label>Price per day (₱)</label><input name="price" type="number" min="1" required placeholder="2500"></div></div><label>Equipment location</label><input name="location" list="bunawanLocationsUpload" placeholder="Type your location or select a suggestion" required><datalist id="bunawanLocationsUpload">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><label>Customer visibility after approval</label><select name="visible"><option value="true">Visible to customers</option><option value="false">Keep hidden from customers</option></select><div class="upload-preview-help"><h3>Equipment photos</h3><p>Upload clear photos of the machine, including plate/serial details if appropriate. Images are automatically optimized for storage.</p><input name="equipmentPhotos" type="file" accept="image/*" multiple required></div><div class="upload-preview-help"><h3>Equipment papers</h3><p>Required for admin review before this listing appears to customers.</p><label>OR/CR registration papers</label><input name="orcr" type="file" accept="image/*,.pdf" required><label>Barangay or DTI permit (optional)</label><input name="permit" type="file" accept="image/*,.pdf"></div><div class="owner-calendar-wrap"><h3>Block unavailable dates</h3><p class="muted">Tap dates to mark them with a slash as unavailable. Unmarked dates will be treated as available after approval.</p><div class="owner-calendar draft-calendar">${calendarDays('',30,true)}</div><input type="hidden" name="unavailableDates" value="[]"><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / blocked</span></div></div><p class="upload-review-note">Your listing and papers will be sent to the admin for review. Customers can see and book it only after approval unless hidden here.</p><button class="btn btn-primary btn-block">Upload equipment for review</button></form>`,"app"]; },
+  papers: (a, u) => { draftUnavailableDates=[]; return [`<h1>Equipment</h1><p>Add your equipment, choose unavailable dates, and submit the equipment papers together for administrator review.</p><form data-form="equipmentupload" class="neu stack equipment-upload-form"><h2>Add equipment</h2><div class="days"><div><label>Equipment name</label><input name="name" required placeholder="e.g. Farm Tractor"></div><div><label>Details</label><input name="spec" placeholder="e.g. 50 HP · Diesel"></div></div><div class="days"><div><label>Type</label><select name="cat" required>${CATS.slice(1).map(c=>`<option value="${c}">${c}</option>`).join('')}</select><label>Or enter a custom type</label><input name="catCustom" placeholder="e.g. Rice Transplanter"></div><div><label>Price per day (₱)</label><input name="price" type="number" min="1" required placeholder="2500"></div></div><label>Equipment location</label><input name="location" list="bunawanLocationsUpload" placeholder="Type your location or select a suggestion" required><datalist id="bunawanLocationsUpload">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><label>Customer visibility after approval</label><select name="visible"><option value="true">Visible to customers</option><option value="false">Keep hidden from customers</option></select><div class="upload-preview-help"><h3>Equipment photos</h3><p>Upload clear photos of the machine, including plate/serial details if appropriate. Images are automatically optimized for storage.</p><input name="equipmentPhotos" type="file" accept="image/*" multiple required></div><div class="upload-preview-help"><h3>Equipment papers</h3><p>Required for administrator review before this listing appears to customers.</p><label>OR/CR registration papers</label><input name="orcr" type="file" accept="image/*,.pdf" required><label>Barangay or DTI permit (optional)</label><input name="permit" type="file" accept="image/*,.pdf"></div><div class="owner-calendar-wrap"><h3>Block unavailable dates</h3><p class="muted">Tap dates to mark them with a slash as unavailable. Unmarked dates will be treated as available after approval.</p><div class="owner-calendar draft-calendar">${calendarDays('',30,true)}</div><input type="hidden" name="unavailableDates" value="[]"><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / blocked</span></div></div><p class="upload-review-note">Your listing and papers will be sent to the administrator for review. Customers can see and book it only after approval unless hidden here.</p><button class="btn btn-primary btn-block">Upload equipment for review</button></form>`,"app"]; },
 
-  commission: (a, u) => { const returned = db.bookings.filter(b => b.status === "returned"); const total = returned.reduce((s,b)=>s+Number(b.total||0),0); const commission=total*.1; const requests=db.commissionWithdrawals.filter(w=>w.admin===u.email); const allocated=requests.filter(w=>["pending","paid"].includes(w.status)).reduce((sum,w)=>sum+Number(w.amount||0),0); const balance=Math.max(0,commission-allocated); return [`<div class="head"><div><h1>Commission breakdown</h1><p>10% commission from completed and returned rentals.</p></div><a class="btn btn-soft" href="#/admin">Back to overview</a></div><div class="grid stats"><div class="neu stat"><b>${returned.length}</b>Completed rentals</div><div class="neu stat"><b>${peso(total)}</b>Completed rental value</div><div class="neu stat"><b>${peso(commission)}</b>Platform commission</div><div class="neu stat"><b>${peso(balance)}</b>Available to cash out</div></div><section class="neu cashout-panel"><h2>Cash out platform commission</h2><p>Enter the receiving account. Requests are recorded for manual transfer; AgriRenta does not initiate a wallet payment.</p><form data-form="commissioncashout" class="stack"><label>Amount (₱)</label><input type="number" name="amount" min="100" max="${balance.toFixed(2)}" step="0.01" required ${balance<100?'disabled':''}><label>Cash-out method</label><select name="method" required><option value="GCash">GCash</option><option value="Maya">Maya</option><option value="PayPal">PayPal</option></select><label>Account name</label><input name="accountName" required placeholder="Name registered to wallet"><label>GCash / Maya number or PayPal email</label><input name="accountRef" required placeholder="Wallet number or PayPal email"><button class="btn btn-primary" ${balance<100?'disabled':''}>Request commission cash out</button></form><h3>Commission cash-out history</h3><div class="stack">${requests.map(w=>`<div class="neu item"><div><b>${peso(w.amount)} · ${escapeHtml(w.method)}</b><p>${escapeHtml(w.accountName)} · ${escapeHtml(w.accountRef)}</p><small>${new Date(w.createdAt).toLocaleString()}</small></div>${pill(w.status)}${w.status==="pending"?`<button class="btn btn-soft btn-sm" data-act="commissionpaid" data-v="${escapeHtml(w.id)}">Mark transferred</button>`:""}</div>`).join("")||"<p>No commission cash-out requests yet.</p>"}</div></section><h2 style="margin-top:1rem">Completed rentals</h2><div class="stack">${returned.map(b=>`<div class="neu item"><div><b>${escapeHtml(bookingEquipment(b).name)}</b><p>${escapeHtml(b.ref)} · ${escapeHtml(usr(b.renter).name)}</p><small>${b.start} – ${b.end}</small></div><div style="text-align:right"><b>${peso(b.total)}</b><p>Commission: ${peso(Number(b.total||0)*.1)}</p></div></div>`).join("")||"<p>No completed rentals recorded yet.</p>"}</div>`, "app"]; },
+  commission: (a, u) => {
+    const records = db.commissionRecords;
+    const payments = db.commissionPayments;
+    const settings = commissionSettings();
+    const earned = records.reduce((sum, record) => sum + Number(record.amount || 0), 0);
+    const collected = payments.filter(payment => payment.status === "verified" && payment.source !== "demo")
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const simulated = payments.filter(payment => payment.source === "demo")
+      .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+    const outstanding = records.filter(record => !["waived", "disputed"].includes(record.status)).reduce((sum, record) => sum + commissionRemaining(record), 0);
+    const overdue = records.filter(record => commissionDisplayStatus(record) === "Overdue").reduce((sum, record) => sum + commissionRemaining(record), 0);
+    const pending = payments.filter(payment => payment.status === "pending_verification");
+    const completed = records.length;
+    const requests = db.commissionWithdrawals.filter(w => w.admin === u.email);
+    const allocated = requests.filter(w=>["pending","paid"].includes(w.status)).reduce((sum,w)=>sum+Number(w.amount||0),0);
+    const balance = Math.max(0,collected-allocated);
+    return [`<div class="head"><div><h1>Commission management</h1><p>AgriRenta earns 10% of a rental total after the rental is returned and customer payment is confirmed. The grace period below sets the owner payment deadline. GCash checkouts on this dashboard are simulations; no money is transferred.</p>${serverApiEnabled ? "" : `<p class="server-mode-warning" role="status">Commission management actions are unavailable in local-only mode.</p>`}</div><a class="btn btn-soft" href="#/admin">Back to overview</a></div>
+    <div class="grid stats"><div class="neu stat"><b>${peso(earned)}</b>Total commission earned</div><div class="neu stat"><b>${peso(collected)}</b>Real verified collections</div><div class="neu stat"><b>${peso(simulated)}</b>Settled in demo only</div><div class="neu stat"><b>${peso(outstanding)}</b>Outstanding commission</div><div class="neu stat"><b>${peso(overdue)}</b>Overdue commission</div><div class="neu stat"><b>${pending.length}</b>Pending manual verifications</div><div class="neu stat"><b>${completed}</b>Completed eligible rentals</div></div>
+    <section class="neu commission-panel"><h2>Commission records</h2><div class="stack">${records.map(record => {
+      const booking = db.bookings.find(item => item.ref === record.bookingRef);
+      const equipment = booking ? bookingEquipment(booking) : { name:"Equipment rental" };
+      const owner = usr(record.owner);
+      const remaining = commissionRemaining(record);
+      const paymentDateLabel = commissionHasSimulationPayment(record) ? "Simulated" : "Paid";
+      const balanceLabel = record.status === "waived" ? "Waived"
+        : record.status === "disputed" ? "Under dispute"
+          : remaining < 0.005 ? "Remaining commission" : "Outstanding";
+      return `<article id="commission-dispute-${escapeHtml(record.id)}" class="neu commission-record"><div>
+        <div class="commission-record-owner">${avatar(owner)}<div><a href="#/user/${encodeURIComponent(owner.email)}" class="commission-record-owner-name">${escapeHtml(owner.name)}</a><p>${escapeHtml(record.bookingRef)} · ${escapeHtml(equipment.name)}</p></div></div>
+        <p>Rental: ${peso(record.rentalAmount)} · Rate: ${(Number(record.rate || .1) * 100).toFixed(0)}% · Commission: ${peso(record.amount)}</p><p>Payment method: ${escapeHtml(booking?.pay || "Not recorded")} · Status: <span class="pill commission-status">${commissionDisplayStatus(record)}</span></p><small>Earned: ${record.earnedAt ? new Date(record.earnedAt).toLocaleString() : "—"} · Deadline: ${record.dueAt ? new Date(record.dueAt).toLocaleString() : "—"} · ${paymentDateLabel}: ${record.paidAt ? new Date(record.paidAt).toLocaleString() : "Not recorded"} · ${balanceLabel}: ${peso(remaining)}</small>${record.status === "disputed" ? `<p>Dispute: ${escapeHtml(record.disputeReason || "")}</p>` : ""}</div></article>`;
+    }).join("") || "<p>No eligible completed rentals yet.</p>"}</div></section>
+    <section class="neu commission-panel"><h2>Owner payment submissions</h2><div class="stack">${pending.map(payment => `<article id="payment-${escapeHtml(payment.id)}" class="neu commission-record"><div><b>${escapeHtml(usr(payment.owner).name)} · ${peso(payment.amount)}</b><p>GCash reference: ${escapeHtml(payment.reference)}</p><small>Submitted ${new Date(payment.createdAt).toLocaleString()}</small><form data-form="commissionpaymentdecision" data-payment-id="${escapeHtml(payment.id)}" class="stack"><label>Administrator note (optional)</label><input name="note" maxlength="500" placeholder="Reason if rejecting"><div class="row"><button class="btn btn-primary btn-sm" name="decision" value="verify">Verify received</button><button class="btn btn-soft btn-sm btn-danger" name="decision" value="reject">Reject</button></div></form></div><span class="pill warn">Pending verification</span></article>`).join("") || "<p>No commission payments are waiting for review.</p>"}</div>
+    <h3 style="margin-top:1rem">Payment history</h3><div class="stack">${payments.filter(payment => payment.status !== "pending_verification").map(payment => `<div id="payment-${escapeHtml(payment.id)}" class="neu item"><div><b>${escapeHtml(usr(payment.owner).name)} · ${peso(payment.amount)}</b><p>${payment.source === "demo" ? "SIMULATION ONLY — no funds transferred" : `Reference: ${escapeHtml(payment.reference)} · ${payment.processedAt ? new Date(payment.processedAt).toLocaleString() : ""}`}</p>${payment.reviewNote ? `<small>${escapeHtml(payment.reviewNote)}</small>` : ""}</div><span class="pill commission-status">${payment.source === "demo" ? "Simulation only" : escapeHtml(payment.status)}</span></div>`).join("") || "<p>No reviewed commission payments yet.</p>"}</div></section>
+    <section class="neu commission-panel"><h2>Commission disputes</h2><div class="stack">${records.filter(record => record.status === "disputed").map(record => `<article class="neu commission-record"><div><b>${escapeHtml(record.bookingRef)} · ${escapeHtml(usr(record.owner).name)} · ${peso(commissionRemaining(record))}</b><p>${escapeHtml(record.disputeReason || "")}</p><small>Submitted ${record.disputedAt ? new Date(record.disputedAt).toLocaleString() : ""}</small><form data-form="commissiondisputeresolution" data-commission-id="${escapeHtml(record.id)}" class="stack"><label>Resolution note</label><input name="note" maxlength="500" placeholder="Explain the resolution"><div class="row"><button class="btn btn-primary btn-sm" name="decision" value="uphold">Uphold · restart grace period</button><button class="btn btn-soft btn-sm" name="decision" value="waive">Waive remaining amount</button></div></form></div></article>`).join("") || "<p>No commission disputes are waiting for review.</p>"}</div></section>
+    <section class="neu commission-panel"><h2>Commission policy</h2><p>AgriRenta earns a 10% commission on each rental after the equipment is returned and the customer's payment is confirmed. Owners must settle the commission within the grace period below. Disputed commissions are paused while the administrator reviews them.</p><form data-form="commissionsettings" class="stack"><input type="hidden" name="paymentInstructions" value="${escapeHtml(settings.paymentInstructions)}"><label>Grace period for newly earned commissions (calendar days)</label><input type="number" name="gracePeriodDays" min="1" max="30" value="${settings.gracePeriodDays}" required><button class="btn btn-primary">Save commission grace period</button></form></section>
+    <section class="neu cashout-panel"><h2>Cash out collected platform commission</h2><p>Available collected balance: <b>${peso(balance)}</b>. Only real, verified collections count here. This form records a manual cash-out request; it does not initiate a wallet payment.</p><form data-form="commissioncashout" class="stack"><label>Amount (₱)</label><input type="number" name="amount" min="100" max="${balance.toFixed(2)}" step="0.01" required ${balance<100?'disabled':''}><label>Cash-out method</label><select name="method" required><option value="GCash">GCash</option><option value="Maya">Maya</option><option value="PayPal">PayPal</option></select><label>Account name</label><input name="accountName" required placeholder="Name registered to wallet"><label>GCash / Maya number or PayPal email</label><input name="accountRef" required placeholder="Wallet number or PayPal email"><button class="btn btn-primary" ${balance<100?'disabled':''}>Request commission cash out</button></form>
+    <div class="commission-cashout-simulation"><h3>Try a cash-out request</h3><p>This simulation records a test request only. No wallet is contacted, no funds are transferred, and it does not change the available collected balance.</p><form data-form="commissioncashoutsimulation" class="stack"><label>Amount to simulate (₱)</label><input type="number" name="amount" min="0.01" step="0.01" required><label>Cash-out method</label><select name="method" required><option value="GCash">GCash</option><option value="Maya">Maya</option><option value="PayPal">PayPal</option></select><label>Account name</label><input name="accountName" required placeholder="Test account name"><label>Wallet number or PayPal email</label><input name="accountRef" required placeholder="Test wallet details"><button class="btn btn-soft">Request commission cash-out (simulation)</button></form></div>
+    <h3>Commission cash-out history</h3><div class="stack">${requests.map(w=>{const simulatedRequest=w.source==="simulation";return `<div class="neu item"><div><b>${peso(w.amount)} · ${escapeHtml(w.method)}</b><p>${escapeHtml(w.accountName)} · ${escapeHtml(w.accountRef)}</p>${simulatedRequest?'<p class="server-mode-warning" role="note">SIMULATION ONLY — no funds transferred.</p>':""}<small>${new Date(w.createdAt).toLocaleString()}</small></div>${simulatedRequest?'<span class="pill warn">Simulation only</span>':pill(w.status)}${!simulatedRequest&&w.status==="pending"?`<button class="btn btn-soft btn-sm" data-act="commissionpaid" data-v="${escapeHtml(w.id)}">Mark transferred</button>`:""}</div>`;}).join("")||"<p>No commission cash-out requests yet.</p>"}</div></section>`, "app"];
+  },
   /* admin */
-  admin: (a, u) => { const us = db.users.filter((x) => x.role !== "admin"), pend = queue().length, pendingWithdrawals = db.withdrawals.filter(w=>w.status==="pending"), done = db.bookings.filter((b) => b.status === "returned").reduce((s, b) => s + b.total, 0), rv = db.reviews;
-    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Admin</small><h1>Admin overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
+  admin: (a, u) => { const us = db.users.filter((x) => x.role !== "admin"), pend = queue().length, pendingWithdrawals = db.withdrawals.filter(w=>w.status==="pending"), commissionEarned = db.commissionRecords.reduce((sum, record) => sum + Number(record.amount || 0), 0), rv = db.reviews;
+    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Administrator</small><h1>Administrator overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
     <section class="platform-global-search"><label class="sr-only" for="adminGlobalSearch">Search users, equipment, or locations</label><input id="adminGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="adminGlobalSearchResults">${platformSearchResults("", u)}</div></section>
-    <a class="promo admin-banner" href="#/queue" aria-label="Open admin review queue"><video autoplay muted loop playsinline preload="metadata" poster="images/adbanner.png" aria-hidden="true"><source src="adbanner.mp4" type="video/mp4"></video></a>
-    <div class="grid stats"><a class="neu stat stat-link" href="#/users"><b>${us.length}</b>Registered users<small>View user accounts →</small></a><a class="neu stat stat-link" href="#/users"><b>${us.filter(isVerified).length}</b>ID verified<small>View verified users →</small></a><a class="neu stat stat-link" href="#/queue"><b>${pend}</b>Pending checks<small>Review submissions →</small></a><a class="neu stat stat-link" href="#/messages"><b>${rv.length ? (rv.reduce((s, x) => s + x.stars, 0) / rv.length).toFixed(1) : "–"}</b>Average rating<small>Open feedback →</small></a><a class="neu stat stat-link" href="#/commission"><b>${peso(done * 0.1)}</b>Commission (10% of completed)<small>View commission breakdown →</small></a></div>
+    <a class="promo admin-banner" href="#/queue" aria-label="Open administrator review queue"><video autoplay muted loop playsinline preload="metadata" poster="images/adbanner.png" aria-hidden="true"><source src="adbanner.mp4" type="video/mp4"></video></a>
+    <div class="grid stats"><a class="neu stat stat-link" href="#/users"><b>${us.length}</b>Registered users<small>View user accounts →</small></a><a class="neu stat stat-link" href="#/users"><b>${us.filter(isVerified).length}</b>ID verified<small>View verified users →</small></a><a class="neu stat stat-link" href="#/queue"><b>${pend}</b>Pending checks<small>Review submissions →</small></a><a class="neu stat stat-link" href="#/messages"><b>${rv.length ? (rv.reduce((s, x) => s + x.stars, 0) / rv.length).toFixed(1) : "–"}</b>Average rating<small>Open feedback →</small></a><a class="neu stat stat-link" href="#/commission"><b>${peso(commissionEarned)}</b>Commission (10% of eligible rentals)<small>View commission management →</small></a></div>
+    ${serverApiEnabled ? `<section class="neu commission-panel"><h2>Move existing media to Supabase Storage</h2><p>Copies older profile pictures, ID images, equipment photos, and papers in small batches. Original data is replaced only after the Storage copy succeeds. Repeat until no eligible files remain.</p><form data-form="migratemedia"><button class="btn btn-primary">Migrate next batch (up to 3 files)</button></form><p id="mediaMigrationStatus" role="status"></p></section>` : ""}
     <h2>Needs attention</h2><div class="stack"><a class="neu item card" href="#/queue"><span class="ico"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span><div><b>Identity checks waiting</b><p>${pend} submissions need review</p></div><b>Review</b></a></div>
-    <div class="chips"><a class="chip" href="#/queue">Review verifications & equipment</a><a class="chip" href="#/users">Manage users</a></div><h2 style="margin-top:1.2rem">Cash-out requests</h2><div class="stack">${pendingWithdrawals.map(w=>`<div class="neu item"><div><b>${usr(w.owner).name} · ${peso(w.amount)}</b><p>${w.method} · ${w.accountName} · ${w.accountRef}</p><small>${new Date(w.createdAt).toLocaleString()}</small></div><button class="btn btn-primary btn-sm" data-act="withdrawpaid" data-v="${w.id}">Mark paid</button><button class="btn btn-soft btn-sm btn-danger" data-act="withdrawreject" data-v="${w.id}">Reject</button></div>`).join('')||'<p>No pending cash-out requests.</p>'}</div>`, "app"]; },
+    <div class="chips"><a class="chip" href="#/queue">Review verifications & equipment</a><a class="chip" href="#/users">Manage users</a></div><h2 style="margin-top:1.2rem">Cash-out requests</h2><div class="stack">${pendingWithdrawals.map(w=>`<div id="cashout-${escapeHtml(w.id)}" class="neu item"><div><b>${usr(w.owner).name} · ${peso(w.amount)}</b><p>${w.method} · ${w.accountName} · ${w.accountRef}</p><small>${new Date(w.createdAt).toLocaleString()}</small></div><button class="btn btn-primary btn-sm" data-act="withdrawpaid" data-v="${w.id}">Mark paid</button><button class="btn btn-soft btn-sm btn-danger" data-act="withdrawreject" data-v="${w.id}">Reject</button></div>`).join('')||'<p>No pending cash-out requests.</p>'}</div>`, "app"]; },
   queue: () => [`<h1>Verification queue</h1><p>Review account checks and uploaded equipment before approval.</p><div class="stack">${queue().map(x => x.eq
-    ? `<section class="neu equipment-review-card"><div class="item"><a class="messenger-avatar-link" href="#/user/${encodeURIComponent(x.u.email)}">${avatar(x.u)}</a><div><b>${escapeHtml(x.eq.name)}</b><p>${escapeHtml(x.u.name)} · Equipment listing & papers</p><small>${escapeHtml(x.eq.location || "Location not set")} · ${peso(x.eq.price)}/day</small></div>${pill("review")}</div>
-      <div class="review-files"><div><b>Equipment photos</b><div class="review-thumbs">${(x.eq.photos || []).map((photo,index) => `<a href="${photo.data}" target="_blank" rel="noopener"><img src="${photo.data}" alt="Equipment photo ${index+1}"></a>`).join("") || "<p>No photo attached</p>"}</div></div>
-      <div class="review-docs"><b>OR/CR</b>${x.eq.orcr ? `<a href="${x.eq.orcr.data}" target="_blank" rel="noopener">${escapeHtml(x.eq.orcr.name || "View OR/CR")}</a>` : "<p>Not attached</p>"}<b>Barangay / DTI permit</b>${x.eq.permit ? `<a href="${x.eq.permit.data}" target="_blank" rel="noopener">${escapeHtml(x.eq.permit.name || "View permit")}</a>` : "<p>Not provided</p>"}</div></div>
+    ? `<section id="equipment-review-${escapeHtml(x.eq.id)}" class="neu equipment-review-card"><div class="item"><a class="messenger-avatar-link" href="#/user/${encodeURIComponent(x.u.email)}">${avatar(x.u)}</a><div><b>${escapeHtml(x.eq.name)}</b><p>${escapeHtml(x.u.name)} · Equipment listing & papers</p><small>${escapeHtml(x.eq.location || "Location not set")} · ${peso(x.eq.price)}/day</small></div>${pill("review")}</div>
+      <div class="review-files"><div><b>Equipment photos</b><div class="review-thumbs">${(x.eq.photos || []).map((photo,index) => `<a href="${escapeHtml(img(photo.data))}" target="_blank" rel="noopener"><img src="${escapeHtml(img(photo.data))}" alt="Equipment photo ${index+1}"></a>`).join("") || "<p>No photo attached</p>"}</div></div>
+      <div class="review-docs"><b>OR/CR</b>${x.eq.orcr ? `<a ${privateAssetAttributes(x.eq.orcr.data,"href")} target="_blank" rel="noopener">${escapeHtml(x.eq.orcr.name || "View OR/CR")}</a>` : "<p>Not attached</p>"}<b>Barangay / DTI permit</b>${x.eq.permit ? `<a ${privateAssetAttributes(x.eq.permit.data,"href")} target="_blank" rel="noopener">${escapeHtml(x.eq.permit.name || "View permit")}</a>` : "<p>Not provided</p>"}</div></div>
       <div class="row"><button class="btn btn-primary btn-sm" data-act="eqapprove" data-v="${escapeHtml(x.eq.id)}">Approve listing</button><button class="btn btn-soft btn-sm btn-danger" data-act="eqreject" data-v="${escapeHtml(x.eq.id)}">Reject listing</button><a class="btn btn-soft btn-sm" href="#/messages/${encodeURIComponent(x.u.email)}" aria-label="Message ${escapeHtml(x.u.name)}"><i class="bi bi-chat-dots" aria-hidden="true"></i> Message owner</a></div></section>`
     : `<section class="neu"><div class="item"><a class="messenger-avatar-link" href="#/user/${encodeURIComponent(x.u.email)}">${avatar(x.u)}</a><div><b>${escapeHtml(x.u.name)}</b><p>${escapeHtml(x.u.role)} · ${escapeHtml(x.kind)}</p></div></div>${x.kind === "ID + selfie" ? idDocsHtml(x.u) : ""}<small>${x.kind === "Equipment papers" ? "Owner equipment documents are pending review." : "Face match (sample)"}</small><div class="row"><div class="bar"><i style="width:${x.fm}%"></i></div><b>${x.fm}%</b></div>
       <div class="row"><button class="btn btn-primary btn-sm" data-act="vok" data-v="${escapeHtml(x.u.email)}|${escapeHtml(x.kind)}">Approve</button><button class="btn btn-soft btn-sm btn-danger" data-act="vno" data-v="${escapeHtml(x.u.email)}|${escapeHtml(x.kind)}">Reject</button><a class="btn btn-soft btn-sm" href="#/messages/${encodeURIComponent(x.u.email)}" aria-label="Message ${escapeHtml(x.u.name)}"><i class="bi bi-chat-dots" aria-hidden="true"></i> Message user</a></div></section>`).join("") || "<p><i class=\"bi bi-check-circle\" aria-hidden=\"true\"></i> Nothing waiting.</p>"}</div>`, "app"],
@@ -873,36 +1152,144 @@ function notificationRecords(u) {
     const thread = String(threadOf(message));
     const href = u.role === "admin" ? `#/messages/${encodeURIComponent(thread)}`
       : thread.startsWith("direct:") ? `#/messages/${encodeURIComponent(thread)}` : "#/messages";
-    rows.push({ id:`message:${message.id}`, tab:"messages", title:`New message from ${usr(message.author).name}`,
+    rows.push({ id:`message:${message.id}`, tab:"messages", title:`New message from ${message.system ? "AgriRenta" : usr(message.author).name}`,
       description:String(message.text || "").slice(0, 180), href, time:message.time });
   }
   if (u.role === "customer") {
     for (const booking of db.bookings.filter(item => item.renter === u.email && item.status !== "pending")) {
       rows.push({ id:`booking:${booking.ref}:${booking.status}`, tab:"bookings", title:`Rental ${booking.status}`,
         description:`${bookingEquipment(booking).name} · ${booking.ref}`, href:`#/submitted/${encodeURIComponent(booking.ref)}`, time:booking.statusUpdatedAt || booking.createdAt });
+      if (booking.status === "returned" && !booking.ratedOwner) {
+        rows.push({ id:`rate-owner:${booking.ref}`, tab:"bookings", title:"Rate your equipment owner",
+          description:`Share an optional rating for ${bookingEquipment(booking).name}.`, href:`#/rate/${encodeURIComponent(booking.ref)}`, time:booking.statusUpdatedAt || booking.end });
+      }
+    }
+    for (const booking of db.bookings.filter(item => item.renter === u.email && item.pay === "GCash" && item.paymentStatus === "demo_completed")) {
+      rows.push({ id:`gcash-demo:${booking.ref}`, tab:"bookings", title:"GCash demo payment complete",
+        description:`${peso(booking.total)} simulated for ${bookingEquipment(booking).name} · ${booking.ref}. No real money was transferred.`, href:`#/submitted/${encodeURIComponent(booking.ref)}`, time:booking.paymentVerifiedAt || booking.createdAt });
     }
   } else if (u.role === "owner") {
     for (const booking of db.bookings.filter(item => item.owner === u.email && item.status === "pending")) {
       rows.push({ id:`request:${booking.ref}`, tab:"dashboard", title:"New rental request",
-        description:`${usr(booking.renter).name} requested ${bookingEquipment(booking).name}.`, href:"#/dashboard", time:booking.createdAt });
+        description:`${usr(booking.renter).name} requested ${bookingEquipment(booking).name}.`, href:`#/dashboard/booking-${encodeURIComponent(booking.ref)}`, time:booking.createdAt });
+    }
+    for (const booking of db.bookings.filter(item => item.owner === u.email && item.pay === "GCash" && item.paymentStatus === "demo_completed")) {
+      rows.push({ id:`gcash-demo:${booking.ref}`, tab:"dashboard", title:"GCash demo payment recorded",
+        description:`${usr(booking.renter).name} completed a simulated ${peso(booking.total)} payment for ${bookingEquipment(booking).name} · ${booking.ref}. No real money was transferred.`, href:`#/dashboard/booking-${encodeURIComponent(booking.ref)}`, time:booking.paymentVerifiedAt || booking.createdAt });
+    }
+    for (const booking of db.bookings.filter(item => item.owner === u.email)) {
+      if (ownerCompletionReminderDue(booking)) {
+        const overdue = ownerCompletionOverdue(booking);
+        const paymentUnconfirmed = booking.status === "returned" && booking.paymentStatus !== "paid"
+          && !(booking.pay === "GCash" && booking.paymentStatus === "demo_completed");
+        const paymentReminder = booking.pay === "Cash on Delivery (COD)"
+          ? `Confirm COD payment for ${booking.ref}. New bookings will pause if it remains unconfirmed for 24 hours.`
+          : `Ask the renter to complete the GCash demo checkout for ${booking.ref}. New bookings will pause if it remains unconfirmed for 24 hours.`;
+        rows.push({
+          id:`completion:${booking.ref}:${overdue ? "overdue" : "reminder"}`,
+          tab:"dashboard",
+          title:overdue ? "Rental confirmation overdue" : paymentUnconfirmed ? "Confirm rental payment" : "Mark rental returned",
+          description:overdue
+            ? `Administrator has been notified. New bookings are paused until ${booking.ref} is confirmed.`
+            : paymentUnconfirmed
+              ? paymentReminder
+              : `The end date for ${booking.ref} has passed. Mark it returned and confirm any COD payment within 24 hours.`,
+          href:`#/dashboard/booking-${encodeURIComponent(booking.ref)}`,
+          time:booking.statusUpdatedAt || booking.end,
+        });
+      }
+      if (booking.status === "returned" && !booking.ratedRenter) {
+        rows.push({ id:`rate-renter:${booking.ref}`, tab:"dashboard", title:"Rate your renter",
+          description:`Share an optional rating for ${usr(booking.renter).name}.`, href:`#/rate/${encodeURIComponent(booking.ref)}`, time:booking.statusUpdatedAt || booking.end });
+      }
     }
     for (const item of db.eq.filter(equipment => equipment.owner === u.email && equipment.status === "rejected")) {
       rows.push({ id:`listing-rejected:${item.id}`, tab:"listings", title:"Equipment listing needs changes",
         description:`${item.name} was not approved. Review the listing and its documents.`, href:`#/equipment/${item.id}`, time:item.reviewedAt || item.createdAt });
+    }
+    for (const record of db.commissionRecords.filter(item => item.owner === u.email && !["paid","waived","disputed"].includes(item.status))) {
+      const overdue = commissionDisplayStatus(record) === "Overdue";
+      rows.push({ id:`commission:${record.id}:${overdue ? "overdue" : "due"}`, tab:"dashboard",
+        title:overdue ? "Commission payment overdue" : "Commission payment due",
+        description:`${peso(record.amount)} (10% of ${peso(record.rentalAmount)}) for ${record.bookingRef} · ${peso(commissionRemaining(record))} outstanding · deadline ${new Date(record.dueAt).toLocaleDateString()}.`,
+        href:`#/dashboard/commission-${encodeURIComponent(record.id)}`, time:record.dueAt });
+    }
+    for (const payment of db.commissionPayments.filter(item => item.owner === u.email && item.source === "demo")) {
+      rows.push({ id:`commission-demo-payment:${payment.id}`, tab:"dashboard", title:"GCash simulation receipt",
+        description:`${peso(payment.amount)} simulated for ${payment.bookingRef}; no real money was transferred.`, href:`#/dashboard/payment-${encodeURIComponent(payment.id)}`, time:payment.processedAt || payment.createdAt });
     }
   } else if (u.role === "admin") {
     for (const item of queue()) {
       const id = item.eq ? `equipment-review:${item.eq.id}` : `verification:${item.u.email}:${item.kind}`;
       rows.push({ id, tab:"queue", title:item.eq ? "Equipment review waiting" : "Verification review waiting",
         description:item.eq ? `${item.u.name} submitted ${item.eq.name}.` : `${item.u.name} submitted ${item.kind}.`,
-        href:item.eq ? "#/queue" : `#/user/${encodeURIComponent(item.u.email)}` });
+        href:item.eq ? `#/queue/equipment-review-${encodeURIComponent(item.eq.id)}` : `#/user/${encodeURIComponent(item.u.email)}` });
+    }
+    for (const booking of db.bookings.filter(ownerCompletionOverdue)) {
+      rows.push({ id:`completion-review:${booking.ref}`, tab:"admin", title:"Rental completion needs review",
+        description:`${usr(booking.owner).name} has not confirmed ${booking.ref}; new bookings are paused.`,
+        href:`#/messages/${encodeURIComponent(booking.owner)}`, time:booking.statusUpdatedAt || booking.end });
     }
     for (const withdrawal of db.withdrawals.filter(item => item.status === "pending")) {
       rows.push({ id:`cashout:${withdrawal.id}`, tab:"admin", title:"Cash-out request waiting",
-        description:`${usr(withdrawal.owner).name} requested ${peso(withdrawal.amount)} via ${withdrawal.method}.`, href:"#/admin", time:withdrawal.createdAt });
+        description:`${usr(withdrawal.owner).name} requested ${peso(withdrawal.amount)} via ${withdrawal.method}.`, href:`#/admin/cashout-${encodeURIComponent(withdrawal.id)}`, time:withdrawal.createdAt });
+    }
+    for (const payment of db.commissionPayments.filter(item => item.status === "pending_verification")) {
+      rows.push({ id:`commission-payment:${payment.id}`, tab:"commission", title:"Commission payment needs verification",
+        description:`${usr(payment.owner).name} submitted ${peso(payment.amount)} with reference ${payment.reference}.`, href:`#/commission/payment-${encodeURIComponent(payment.id)}`, time:payment.createdAt });
+    }
+    for (const record of db.commissionRecords.filter(item => item.status === "disputed")) {
+      rows.push({ id:`commission-dispute:${record.id}`, tab:"commission", title:"Commission dispute needs review",
+        description:`${usr(record.owner).name} disputed ${record.bookingRef}.`, href:`#/commission/commission-dispute-${encodeURIComponent(record.id)}`, time:record.disputedAt });
     }
   }
   return rows.sort((a,b) => new Date(b.time || 0) - new Date(a.time || 0));
+}
+
+let notificationPopupUser = "";
+let notificationPopupSeen = new Set();
+let activeNotificationPopupId = "";
+function updateNotificationPopup(u) {
+  const popup = $("#notificationToast");
+  if (!popup) return;
+  if (!u) {
+    popup.hidden = true;
+    notificationPopupUser = "";
+    notificationPopupSeen = new Set();
+    return;
+  }
+  const storageKey = `agrirenta-notification-popup:${u.email}`;
+  if (notificationPopupUser !== u.email) {
+    notificationPopupUser = u.email;
+    popup.hidden = true;
+    activeNotificationPopupId = "";
+    try {
+      notificationPopupSeen = new Set(JSON.parse(sessionStorage.getItem(storageKey) || "[]"));
+    } catch (error) {
+      console.warn("Could not restore notification popup history.", error);
+      notificationPopupSeen = new Set();
+    }
+  }
+  const rows = notificationRecords(u);
+  const unread = rows.filter(item => !(db.notificationReads[u.email] || []).includes(item.id));
+  const candidate = unread.find(item => !notificationPopupSeen.has(item.id));
+  if (!candidate) {
+    if (activeNotificationPopupId && !unread.some(item => item.id === activeNotificationPopupId)) popup.hidden = true;
+    return;
+  }
+  activeNotificationPopupId = candidate.id;
+  $("#notificationToastTitle").textContent = candidate.title;
+  $("#notificationToastDescription").textContent = candidate.description;
+  const icon = popup.querySelector(".notification-toast-icon i");
+  if (icon) icon.className = `bi ${candidate.tab === "messages" ? "bi-chat-dots-fill" : candidate.tab === "bookings" ? "bi-calendar-check-fill" : candidate.tab === "commission" ? "bi-cash-coin" : "bi-bell-fill"}`;
+  popup.querySelector('[data-act="opennotification"]').dataset.v = encodeURIComponent(candidate.id);
+  popup.hidden = false;
+  rows.forEach(item => notificationPopupSeen.add(item.id));
+  try {
+    sessionStorage.setItem(storageKey, JSON.stringify([...notificationPopupSeen].slice(-5000)));
+  } catch (error) {
+    console.warn("Could not save notification popup history.", error);
+  }
 }
 
 /* Optimize uploaded images before storing them with the application state. */
@@ -922,10 +1309,21 @@ const compressImage = (file, max = 1000, quality = .72) => new Promise((resolve,
   };
   reader.readAsDataURL(file);
 });
+const dataUrlToBlob = async (dataUrl) => {
+  const response = await fetch(dataUrl);
+  if (!response.ok) throw new Error("Could not prepare the optimized image for secure storage.");
+  return response.blob();
+};
+const uploadStoredMedia = async (file, kind) => {
+  if (!serverApiEnabled || !window.agrirentaStorage?.upload) {
+    throw new Error("Secure file storage is unavailable. Connect the AgriRenta Storage backend and try again.");
+  }
+  return window.agrirentaStorage.upload(file, kind);
+};
 /* Admin view of the ID front/back and selfie that a user submitted. */
 const idDocsHtml = (t) => { const d = t.idDocs; if (!d) return '<p>No ID photos were saved for this submission (submitted before this update). Ask the user to resubmit.</p>';
-  const open = "fetch(this.src).then(r=>r.blob()).then(b=>window.open(URL.createObjectURL(b)))";
-  return `<div class="review-files"><div><b>${d.type || "Government ID"} (front / back)</b><div class="review-thumbs">${[d.front, d.back].map((s, i) => `<img src="${s}" alt="ID ${i ? "back" : "front"}" style="cursor:zoom-in" onclick="${open}">`).join("")}</div></div><div><b>Selfie</b><div class="review-thumbs"><img src="${d.selfie}" alt="Selfie" style="cursor:zoom-in" onclick="${open}"></div></div></div>`; };
+  const image = (reference, label) => `<img ${privateAssetAttributes(reference)} alt="${label}" style="cursor:zoom-in" onclick="window.open(this.src, '_blank', 'noopener')">`;
+  return `<div class="review-files"><div><b>${escapeHtml(d.type || "Government ID")} (front / back)</b><div class="review-thumbs">${[d.front, d.back].map((reference, index) => image(reference, `ID ${index ? "back" : "front"}`)).join("")}</div></div><div><b>Selfie</b><div class="review-thumbs">${image(d.selfie, "Selfie")}</div></div></div>`; };
 
 /* Role-aware pending activity badges. Counts point users to the section needing attention. */
 function navNoticeCount(u, tab) {
@@ -944,11 +1342,11 @@ const TABS = {
 };
 const shell = (html, name, u) => `<div class="shell"><aside class="side"><a class="brand" href="index.html"><img src="logo.png" alt=""></a>
   <nav class="nav">${TABS[u ? u.role : "guest"].map((t) => { const count = navNoticeCount(u,t[0]); return `<a href="#/${t[0]}" class="${name === t[0] ? "on" : ""}"><span class="nav-icon-wrap">${t[2]}${count ? `<i class="notification-badge" aria-label="${count} notifications">${count > 9 ? "9+" : count}</i>` : ""}</span>${t[1]}</a>`; }).join("")}</nav>
-  <div class="foot">${u ? `<div class="account-mini">${avatar(u)}<div><small class="role-kicker-dark">${roleLabel(u)}</small><b>${u.name}</b><a href="#" data-act="logout"><i class="bi bi-box-arrow-right"></i> Log out</a></div></div>` : `<a href="#/register"><b>Create account</b></a>`}</div></aside><main class="main">${serverApiEnabled ? "" : `<div class="server-mode-warning" role="status"><b>Local-only mode:</b> changes are saved in this browser and will not appear in other accounts. Connect Supabase (see <code>supabase-config.js</code> and README.md) to share equipment and account data.</div>`}${html}</main></div>`;
+  <div class="foot">${u ? `<div class="account-mini">${avatar(u)}<div><small class="role-kicker-dark">${roleLabel(u)}</small><b>${u.name}</b><a href="#" data-act="logout"><i class="bi bi-box-arrow-right"></i> Log out</a></div></div>` : `<a href="#/register"><b>Create account</b></a>`}</div></aside><main class="main">${serverApiChecked && !serverApiEnabled ? `<div class="server-mode-warning" role="status"><b>Local-only mode:</b> changes are saved in this browser and will not appear in other accounts. Connect Supabase (see <code>supabase-config.js</code> and README.md) to share equipment and account data.</div>` : ""}${html}</main></div>`;
 
 function render() {
   const [, name = "", arg] = location.hash.slice(1).split("/"), u = me();
-  const pub = ["welcome", "login", "register", "explore", "equipment", "owner", "member"];
+  const pub = ["welcome", "login", "register", "verify-email", "explore", "equipment", "owner", "member"];
   if (u && rolePending && name !== "choose-role") return go("#/choose-role");
   if (u && !rolePending && name === "choose-role") return go(homeOf(u));
   if (!name) return go(u ? homeOf(u) : "#/welcome");
@@ -961,8 +1359,16 @@ function render() {
   const [html, mode] = V[name](arg, u);
   document.body.classList.toggle("auth", mode === "auth");
   app.innerHTML = mode === "auth" ? html : shell(html, name, u);
+  updateNotificationPopup(u);
+  if (mode === "app") loadPrivateAssets(app).catch((error) => {
+    console.error("Could not resolve private AgriRenta document links.", error);
+    toast("Could not load a private document. Refresh or contact the administrator.");
+  });
   window.scrollTo(0, 0);
-  if (name === "verify-mobile") { const o = [...app.querySelectorAll(".otp input")]; if (o[0]) o[0].focus(); o.forEach((i, n) => i.addEventListener("input", () => { i.value = i.value.replace(/\D/g, "").slice(0,1); if (i.value && o[n + 1]) o[n + 1].focus(); })); }
+  if (arg && ["dashboard", "commission", "admin", "queue"].includes(name)) {
+    requestAnimationFrame(() => document.getElementById(arg)?.scrollIntoView({ behavior:"smooth", block:"center" }));
+  }
+  if (name === "verify-email") { const code = app.querySelector(".otp input"); if (code) code.focus(); }
   if (name === "confirm") {
     const details = $("#onlinePaymentDetails");
     const radios = [...app.querySelectorAll('input[name="pay"]')];
@@ -970,16 +1376,20 @@ function render() {
       const method = app.querySelector('input[name="pay"]:checked')?.value || "";
       const title = $("#paymentFormTitle"), hint = $("#paymentFormHint"), message = $("#paymentMethodMessage");
       const submitButton = app.querySelector('form[data-form="confirm"] button[type="submit"], form[data-form="confirm"] button:not([type])');
-      if (details) details.hidden = !method;
+      if (details) details.hidden = !method || method === "GCash";
       const info = {
-        "GCash": { title:"GCash demo checkout", hint:"Continue to the AgriRenta GCash demonstration.", message:"<b>GCash payment demo</b><p>This academic demo does not process a real payment. Never enter your GCash PIN or OTP here.</p>", button:"Continue to GCash Demo" },
-        "Cash on Delivery (COD)": { title:"Cash on Delivery / Collection", hint:"No online payment is started for this method.", message:"<b>Pay when the rental is delivered or collected</b><p>The booking request will be sent to the equipment owner. The owner/admin must mark the payment as received after collecting the money.</p>", button:"Submit Rental Request" }
+        "GCash": { title:"GCash", hint:"", message:"", button:"Continue to GCash" },
+        "Cash on Delivery (COD)": { title:"Cash on Delivery / Collection", hint:"No online payment is started for this method.", message:"<b>Pay when the rental is delivered or collected</b><p>The booking request will be sent to the equipment owner. The owner or administrator must mark the payment as received after collecting the money.</p>", button:"Submit Rental Request" }
       };
       const selected = info[method];
       if (title) title.textContent = selected?.title || "Payment instructions";
       if (hint) hint.textContent = selected?.hint || "Choose a payment method to see the next step.";
       if (message) message.innerHTML = selected?.message || "";
       if (submitButton) submitButton.textContent = selected?.button || "Submit Rental Request";
+      if (method === "GCash") {
+        const notice = $("#gcashDemoNotice");
+        if (notice && !notice.open) notice.showModal();
+      }
     };
     radios.forEach(r => r.addEventListener("change", updatePaymentFields));
     updatePaymentFields();
@@ -990,14 +1400,59 @@ window.addEventListener("hashchange", render);
 /* ---------- Actions ---------- */
 const rerender = () => { const y = scrollY; render(); scrollTo(0, y); };
 document.addEventListener("click", async (e) => {
+  const passwordToggle = e.target.closest("[data-password-toggle]");
+  if (passwordToggle) {
+    e.preventDefault();
+    const field = document.getElementById(passwordToggle.dataset.target);
+    if (!field) return;
+    const visible = field.type === "password";
+    field.type = visible ? "text" : "password";
+    const fieldLabel = passwordToggle.dataset.fieldLabel || "password";
+    passwordToggle.setAttribute("aria-label", `${visible ? "Hide" : "Show"} ${fieldLabel}`);
+    passwordToggle.setAttribute("title", `${visible ? "Hide" : "Show"} ${fieldLabel}`);
+    passwordToggle.setAttribute("aria-pressed", String(visible));
+    const icon = passwordToggle.querySelector("i");
+    if (icon) icon.className = `bi ${visible ? "bi-eye-slash" : "bi-eye"}`;
+    return;
+  }
+  const notificationLink = e.target.closest("[data-notification-id]");
+  if (notificationLink) {
+    e.preventDefault();
+    const u = me(), id = decodeURIComponent(notificationLink.dataset.notificationId || "");
+    const item = u && notificationRecords(u).find(record => record.id === id);
+    if (!u || !item) return;
+    db.notificationReads[u.email] = [...new Set([...(db.notificationReads[u.email] || []), id])];
+    await save();
+    go(notificationLink.getAttribute("href"));
+    return;
+  }
   const el = e.target.closest("[data-act]"); if (!el) return;
   const a = el.dataset.act, v = el.dataset.v, u = me(), b = db.bookings.find((x) => x.ref === v);
   if (a !== "cat" || el.tagName === "BUTTON") e.preventDefault();
   if (a === "logout") { fetch("/api/logout", { method:"POST", credentials:"same-origin" }).catch(() => {}); db.me = null; save(); go("#/welcome"); render(); }
+  else if (a === "closenotification") { $("#notificationToast").hidden = true; activeNotificationPopupId = ""; }
+  else if (a === "closegcashnotice") { $("#gcashDemoNotice")?.close(); }
+  else if (a === "opennotification") {
+    const id = decodeURIComponent(v || activeNotificationPopupId);
+    const item = u && notificationRecords(u).find(record => record.id === id);
+    if (!item) { $("#notificationToast").hidden = true; return toast("This notification is no longer available."); }
+    db.notificationReads[u.email] = [...new Set([...(db.notificationReads[u.email] || []), id])];
+    $("#notificationToast").hidden = true;
+    await save();
+    go(item.href);
+  }
   else if (a === "marknotification") { if (!u) return; const id = decodeURIComponent(v || ""); db.notificationReads[u.email] = [...new Set([...(db.notificationReads[u.email] || []), id])]; await save(); rerender(); }
   else if (a === "google") { if (window.agrirentaGoogleLogin) window.agrirentaGoogleLogin().catch(() => toast("Could not start Google sign-in. Please try again.")); else toast("Google sign-in needs Supabase to be connected (see supabase-config.js)."); }
   else if (a === "forgot") toast("Password reset email will be sent through Supabase (next step).");
-  else if (a === "resend") toast("Code resent (demo).");
+  else if (a === "resend-email") {
+    if (!serverApiEnabled) return toast("Email codes require a connected Supabase project.");
+    try {
+      const response = await fetch("/api/resend-verification", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:v }) });
+      const result = await response.json();
+      if (!response.ok || !result.ok) return toast(result.error || "Could not resend the email code.");
+      toast("A new verification code was sent to your email.");
+    } catch (err) { toast("Could not reach Supabase. Check your connection and try again."); }
+  }
   else if (a === "verifylater") { if (!u) return go("#/login"); toast("You can finish verification later from your profile."); go(homeOf(u)); }
   else if (a === "role") { regRole = v; rerender(); }
   else if (a === "setrole") {
@@ -1006,7 +1461,7 @@ document.addEventListener("click", async (e) => {
       const result = await response.json();
       if (!response.ok || !result.ok) return toast(result.error || "Could not save your choice.");
       rolePending = false;
-      location.hash = "#/verify-mobile";
+      location.hash = "#/verify-id";
       location.reload();
     } catch (err) { toast("Could not reach the AgriRenta backend."); }
   }
@@ -1019,16 +1474,60 @@ document.addEventListener("click", async (e) => {
   else if (a === "unblock") { db.availability = db.availability.filter((x) => String(x.id) !== String(v) || x.owner !== u?.email); save(); toast("Blocked dates removed."); rerender(); }
   else if (a === "toggleavailability") { if(u?.role!=="owner") return toast("Only the equipment owner can change availability."); const item=db.eq.find(x=>String(x.id)===String(v)&&x.owner===u.email); const day=el.dataset.date; if(!item||!day) return; if(dayIsBooked(v,day)) return toast("This date is already booked and cannot be changed."); const existing=db.availability.find(x=>Number(x.eq)===Number(v)&&x.owner===u.email&&x.start===day&&x.end===day); if(existing) db.availability=db.availability.filter(x=>x!==existing); else db.availability.push({id:Date.now(),eq:Number(v),owner:u.email,start:day,end:day,reason:"Owner marked unavailable"}); save(); rerender(); }
   else if (a === "draftday") { const day=el.dataset.date; if(!day) return; draftUnavailableDates=draftUnavailableDates.includes(day)?draftUnavailableDates.filter(x=>x!==day):[...draftUnavailableDates,day]; el.classList.toggle("unavailable",draftUnavailableDates.includes(day));el.classList.toggle("available",!draftUnavailableDates.includes(day));el.classList.toggle("selected",draftUnavailableDates.includes(day));const sm=el.querySelector('small');if(sm)sm.textContent=draftUnavailableDates.includes(day)?'Unavailable':'Available';const hidden=app.querySelector('input[name="unavailableDates"]');if(hidden)hidden.value=JSON.stringify(draftUnavailableDates); }
-  else if (a === "eqapprove" || a === "eqreject") { if(u?.role!=="admin") return toast("Only admin can review equipment listings."); const item=db.eq.find(x=>String(x.id)===String(v)); if(!item) return toast("Equipment listing not found."); item.status=a==="eqapprove"?"approved":"rejected"; const ownerAccount=usr(item.owner); if(ownerAccount.v){const otherPending=db.eq.some(x=>x.id!==item.id&&x.owner===item.owner&&x.status==="review");ownerAccount.v.papers=a==="eqapprove"&&!otherPending?"ok":(otherPending?"review":"none");} item.reviewedAt=new Date().toISOString(); item.reviewedBy=u.email; save(); toast(a==="eqapprove"?(item.visible===false?"Equipment approved but remains hidden from customers.":"Equipment listing approved and now visible to customers."):"Equipment listing rejected."); rerender(); }
-  else if (a === "withdrawpaid" || a === "withdrawreject") { if(u?.role!=="admin") return toast("Only admin can process cash-out requests."); const w=db.withdrawals.find(x=>String(x.id)===String(v)); if(!w) return toast("Cash-out request not found."); w.status=a==="withdrawpaid"?"paid":"rejected"; w.processedAt=new Date().toISOString();w.processedBy=u.email;save();toast(a==="withdrawpaid"?"Marked as paid. Complete the transfer in the selected wallet separately.":"Cash-out request rejected.");rerender(); }
-  else if (a === "commissionpaid") { if(u?.role!=="admin") return toast("Only admin can update commission cash-outs."); const request=db.commissionWithdrawals.find(x=>String(x.id)===String(v)&&x.admin===u.email); if(!request||request.status!=="pending") return toast("Commission cash-out request not found."); request.status="paid"; request.processedAt=new Date().toISOString(); save(); toast("Commission transfer recorded as complete."); rerender(); }
+  else if (a === "eqapprove" || a === "eqreject") { if(u?.role!=="admin") return toast("Only an administrator can review equipment listings."); const item=db.eq.find(x=>String(x.id)===String(v)); if(!item) return toast("Equipment listing not found."); item.status=a==="eqapprove"?"approved":"rejected"; const ownerAccount=usr(item.owner); if(ownerAccount.v){const otherPending=db.eq.some(x=>x.id!==item.id&&x.owner===item.owner&&x.status==="review");ownerAccount.v.papers=a==="eqapprove"&&!otherPending?"ok":(otherPending?"review":"none");} item.reviewedAt=new Date().toISOString(); item.reviewedBy=u.email; save(); toast(a==="eqapprove"?(item.visible===false?"Equipment approved but remains hidden from customers.":"Equipment listing approved and now visible to customers."):"Equipment listing rejected."); rerender(); }
+  else if (a === "withdrawpaid" || a === "withdrawreject") { if(u?.role!=="admin") return toast("Only an administrator can process cash-out requests."); const w=db.withdrawals.find(x=>String(x.id)===String(v)); if(!w) return toast("Cash-out request not found."); w.status=a==="withdrawpaid"?"paid":"rejected"; w.processedAt=new Date().toISOString();w.processedBy=u.email;save();toast(a==="withdrawpaid"?"Marked as paid. Complete the transfer in the selected wallet separately.":"Cash-out request rejected.");rerender(); }
+  else if (a === "commissionpaid") { if(u?.role!=="admin") return toast("Only an administrator can update commission cash-outs."); const request=db.commissionWithdrawals.find(x=>String(x.id)===String(v)&&x.admin===u.email); if(!request||request.status!=="pending") return toast("Commission cash-out request not found."); request.status="paid"; request.processedAt=new Date().toISOString(); save(); toast("Commission transfer recorded as complete."); rerender(); }
+  else if (a === "paycommissiondemo") {
+    if (!u || u.role !== "owner") return toast("Only the equipment owner can pay this commission.");
+    if (!serverApiEnabled) return toast("Commission payment simulations require the connected Supabase backend.");
+    if (db.commissionPayments.some(payment => payment.owner === u.email && payment.status === "pending_verification")) {
+      return toast("Wait for the pending commission payment to be reviewed before starting another GCash simulation.");
+    }
+    const record = db.commissionRecords.find(item => item.id === v && item.owner === u.email);
+    if (!record || commissionRemaining(record) < 0.01 || ["disputed", "waived"].includes(record.status)) {
+      return toast("This commission is no longer payable.");
+    }
+    const attemptId = crypto.randomUUID();
+    const paymentUrl = new URL("PayDemoUIPrototype.html", location.href);
+    paymentUrl.searchParams.set("mode", "commission");
+    paymentUrl.searchParams.set("commissionId", record.id);
+    paymentUrl.searchParams.set("attemptId", attemptId);
+    paymentUrl.searchParams.set("amount", commissionRemaining(record).toFixed(2));
+    paymentUrl.searchParams.set("rentalAmount", Number(record.rentalAmount).toFixed(2));
+    paymentUrl.searchParams.set("commissionAmount", Number(record.amount).toFixed(2));
+    paymentUrl.searchParams.set("bookingRef", record.bookingRef);
+    window.location.assign(paymentUrl.href);
+  }
   else if (a === "star") { rate.stars = +v; rerender(); }
   else if (a === "adminstar") { rate.stars = +v; rerender(); }
   else if (a === "tag") { rate.tags = rate.tags.includes(v) ? rate.tags.filter((t) => t !== v) : [...rate.tags, v]; rerender(); }
-  else if (a === "cancel") { if (!b || u?.role !== "customer" || b.renter !== u.email || b.status !== "pending") return toast("Only your pending bookings can be cancelled."); db.bookings = db.bookings.filter((x) => x.ref !== v); save(); toast("Booking cancelled."); rerender(); }
-  else if (["approve", "decline", "returned"].includes(a)) { if (!b || u?.role !== "owner" || b.owner !== u.email) return toast("Only the equipment owner can update this booking."); b.status = a === "approve" ? "approved" : a === "decline" ? "declined" : "returned"; b.statusUpdatedAt=new Date().toISOString(); save(); toast("Booking " + b.status + "."); rerender(); }
-  else if (a === "markpaid") { if (!b || (u?.role !== "admin" && (u?.role !== "owner" || b.owner !== u.email))) return toast("Only the equipment owner or admin can verify a manual payment."); if (b.pay !== "Cash on Delivery (COD)") return toast("Only COD payments can be marked received manually."); b.paymentStatus = "paid"; b.paymentVerifiedAt = new Date().toISOString(); b.paymentVerifiedBy = u.email; save(); toast("Manual payment marked as received."); rerender(); }
-  else if (a === "vok" || a === "vno") { if (u?.role !== "admin") return toast("Only admin can review verification requests."); const [em, kind] = v.split("|"), t = db.users.find(x => x.email === em); if (!t) return toast("User not found."); const ok = a === "vok"; if (serverApiEnabled) { try { const response = await fetch("/api/admin/verification", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:em, kind, approved:ok }) }); const result = await response.json(); if (!response.ok || !result.ok) return toast(result.error || "Could not save verification decision."); } catch (err) { return toast("Could not reach the AgriRenta backend."); } } if (kind === "Equipment papers") t.v.papers = ok ? "ok" : "none"; else { t.v.id = ok ? "ok" : "none"; t.v.selfie = ok ? "ok" : "none"; } save(); toast(ok ? "Approved." : "Rejected."); rerender(); }
+  else if (a === "cancel") { if (!b || u?.role !== "customer" || b.renter !== u.email || b.status !== "pending" || b.pay === "GCash") return toast("Only your pending COD bookings can be cancelled."); db.bookings = db.bookings.filter((x) => x.ref !== v); save(); toast("Booking cancelled."); rerender(); }
+  else if (["approve", "decline", "returned"].includes(a)) {
+    if (!b || u?.role !== "owner" || b.owner !== u.email) return toast("Only the equipment owner can update this booking.");
+    if (a === "decline" && b.pay === "GCash") return toast("GCash rental requests cannot be declined. Please accept the request or contact the renter.");
+    b.status = a === "approve" ? "approved" : a === "decline" ? "declined" : "returned";
+    b.statusUpdatedAt = new Date().toISOString();
+    if (!await save()) return;
+    if (serverApiEnabled) {
+      try { await refreshServerState(); }
+      catch (err) { toast(`Booking saved, but commission and notifications could not refresh: ${err.message}`); rerender(); return; }
+    }
+    toast("Booking " + b.status + ".");
+    rerender();
+  }
+  else if (a === "markpaid") {
+    if (!b || (u?.role !== "admin" && (u?.role !== "owner" || b.owner !== u.email))) return toast("Only the equipment owner or administrator can verify a manual payment.");
+    if (b.pay !== "Cash on Delivery (COD)") return toast("Only COD payments can be marked received manually.");
+    b.paymentStatus = "paid"; b.paymentVerifiedAt = new Date().toISOString(); b.paymentVerifiedBy = u.email;
+    if (!await save()) return;
+    if (serverApiEnabled) {
+      try { await refreshServerState(); }
+      catch (err) { toast(`Payment saved, but commission and notifications could not refresh: ${err.message}`); rerender(); return; }
+    }
+    toast("Manual payment marked as received.");
+    rerender();
+  }
+  else if (a === "vok" || a === "vno") { if (u?.role !== "admin") return toast("Only an administrator can review verification requests."); const [em, kind] = v.split("|"), t = db.users.find(x => x.email === em); if (!t) return toast("User not found."); const ok = a === "vok"; if (serverApiEnabled) { try { const response = await fetch("/api/admin/verification", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email:em, kind, approved:ok }) }); const result = await response.json(); if (!response.ok || !result.ok) return toast(result.error || "Could not save verification decision."); } catch (err) { return toast("Could not reach the AgriRenta backend."); } } if (kind === "Equipment papers") t.v.papers = ok ? "ok" : "none"; else { t.v.id = ok ? "ok" : "none"; t.v.selfie = ok ? "ok" : "none"; } save(); toast(ok ? "Approved." : "Rejected."); rerender(); }
 });
 document.addEventListener("keydown", (e) => {
   const card = e.target.closest('[data-act="bookingdetails"]');
@@ -1058,9 +1557,29 @@ document.addEventListener("input", (e) => {
   }
 });
 document.addEventListener("change", (e) => { if (e.target.id === "sortBy" && $("#list")) { sortBy = e.target.value; $("#list").innerHTML = list(); } });
+async function postCommissionAction(path, payload, successMessage) {
+  if (!serverApiEnabled) return toast("Commission actions require a connected Supabase backend; local-only mode cannot verify payments or disputes.");
+  try {
+    const response = await fetch(path, { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify(payload) });
+    const result = await response.json();
+    if (!response.ok || !result.ok) return toast(result.error || "Could not save the commission action.");
+    applyApiState(result.state);
+    toast(successMessage);
+    rerender();
+  } catch (err) {
+    toast(err.message || "Could not reach the AgriRenta backend.");
+  }
+}
+async function refreshServerState() {
+  const response = await fetch("/api/state", { credentials:"same-origin", headers:{"Accept":"application/json"} });
+  const result = await response.json();
+  if (!response.ok || !result.ok) throw new Error(result.error || "Could not refresh AgriRenta data.");
+  applyApiState(result.state);
+}
 document.addEventListener("submit", async (e) => {
   const f = e.target.closest("form[data-form]"); if (!f) return; e.preventDefault();
   const d = Object.fromEntries(new FormData(f)), k = f.dataset.form, u = me();
+  if (e.submitter?.name) d[e.submitter.name] = e.submitter.value;
   if (k === "login") {
     const x = db.users.find((y) => y.email === d.email.trim().toLowerCase());
     if (serverApiEnabled) {
@@ -1079,7 +1598,7 @@ document.addEventListener("submit", async (e) => {
         } else {
           demoCatalogChanged = normalizeState(snapshot.state);
           db.me = result.user.email;
-          if (demoCatalogChanged) {
+          if (demoCatalogChanged && !db.users.some(user => typeof user.pw === "string")) {
             if (!await save()) return;
           } else localStorage.setItem("agri", JSON.stringify(db));
         }
@@ -1092,7 +1611,15 @@ document.addEventListener("submit", async (e) => {
         return toast("Could not reach the AgriRenta backend. Check your internet connection and the Supabase setup, then try again.");
       }
     }
-    if (!x || x.pw !== d.pw) return toast("Wrong email or password.");
+    if (!x) return toast("Wrong email or password.");
+    try {
+      const valid = x.pwHash ? await verifyLocalPassword(d.pw, x.pwHash) : x.pw === d.pw;
+      if (!valid) return toast("Wrong email or password.");
+      if (typeof x.pw === "string") {
+        x.pwHash = await hashLocalPassword(x.pw);
+        delete x.pw;
+      }
+    } catch (err) { return toast(err.message || "Could not securely verify this local password."); }
     db.me = x.email; save();
     const requestedEquipment = sessionStorage.getItem("agri_book_after_login");
     const equipment = requestedEquipment && db.eq.find(item => item.name === requestedEquipment && (!item.status || item.status === "approved"));
@@ -1116,7 +1643,8 @@ document.addEventListener("submit", async (e) => {
     for (const r of db.reviews) { if (r.to === oldEmail) r.to = email; if (r.from === oldEmail) r.from = email; }
     db.me = email; save(); toast("Personal information updated."); rerender();
   } else if (k === "password") {
-    if ((d.newPassword || "").length < 8) return toast("New password must be at least 8 characters.");
+    const passwordError = passwordValidationError(String(d.newPassword || ""));
+    if (passwordError) return toast(passwordError);
     if (d.newPassword !== d.confirmPassword) return toast("New passwords do not match.");
     if (serverApiEnabled) {
       try {
@@ -1125,19 +1653,84 @@ document.addEventListener("submit", async (e) => {
         if (!response.ok || !result.ok) return toast(result.error || "Could not update password.");
       } catch (err) { return toast("Could not reach the AgriRenta backend."); }
     } else {
-      if (d.currentPassword !== u.pw) return toast("Current password is incorrect.");
-      u.pw = d.newPassword;
+      try {
+        if (!await verifyLocalPassword(d.currentPassword, u.pwHash)) return toast("Current password is incorrect.");
+        u.pwHash = await hashLocalPassword(d.newPassword);
+        delete u.pw;
+      } catch (err) { return toast(err.message || "Could not securely update the local password."); }
     }
     save(); toast("Password updated."); f.reset();
   } else if (k === "avatar") {
     const file = f.querySelector('input[name="avatar"]').files[0];
     if (!file || !file.type.startsWith("image/")) return toast("Please choose an image file.");
     try {
-      u.avatar = await compressImage(file, 1600, .84);
+      const compressed = await compressImage(file, 1600, .84);
+      u.avatar = serverApiEnabled
+        ? (await uploadStoredMedia(await dataUrlToBlob(compressed), "avatar")).reference
+        : compressed;
       if (!await save()) return;
       toast("Profile picture saved to your AgriRenta account.");
       rerender();
-    } catch (err) { toast("Could not read that image. Try another file."); }
+    } catch (err) { toast(err.message || "Could not save that profile picture."); }
+  } else if (k === "commissionpayment") {
+    if (!u || u.role !== "owner") return toast("Only equipment owners can submit commission payments.");
+    const amount = Number(d.amount), reference = String(d.reference || "").trim();
+    if (!Number.isFinite(amount) || amount < 0.01 || !reference) return toast("Enter a valid payment amount and GCash transaction reference.");
+    await postCommissionAction("/api/commission/payment", { amount, reference }, "Payment submitted. Your commission balance will update after the administrator verifies the GCash receipt.");
+  } else if (k === "commissiondispute") {
+    if (!u || u.role !== "owner") return toast("Only equipment owners can dispute commission records.");
+    await postCommissionAction("/api/commission/dispute", {
+      commissionId:f.dataset.commissionId,
+      reason:String(d.reason || "").trim()
+    }, "Commission dispute submitted for Administrator review.");
+  } else if (k === "commissionpaymentdecision") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can review commission payments.");
+    await postCommissionAction("/api/commission/payment-review", {
+      paymentId:f.dataset.paymentId,
+      decision:String(d.decision || ""),
+      note:String(d.note || "").trim()
+    }, d.decision === "verify" ? "Payment verified and allocated to outstanding commissions." : "Payment submission rejected.");
+  } else if (k === "commissiondisputeresolution") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can resolve commission disputes.");
+    await postCommissionAction("/api/commission/dispute-review", {
+      commissionId:f.dataset.commissionId,
+      decision:String(d.decision || ""),
+      note:String(d.note || "").trim()
+    }, d.decision === "waive" ? "Remaining commission waived." : "Dispute upheld; the grace period has restarted.");
+  } else if (k === "commissionsettings") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can update commission settings.");
+    await postCommissionAction("/api/commission/settings", {
+      paymentInstructions:String(d.paymentInstructions || "").trim(),
+      gracePeriodDays:Number(d.gracePeriodDays)
+    }, "Commission instructions and grace period saved.");
+  } else if (k === "migratemedia") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can migrate existing media.");
+    if (!serverApiEnabled) return toast("Media migration requires a connected Supabase backend.");
+    try {
+      const response = await fetch("/api/admin/migrate-media", {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({limit:3})
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) return toast(result.error || "Could not migrate existing media.");
+      applyMediaMigrationUpdates(result.updates);
+      try { localStorage.setItem("agri", JSON.stringify(db)); }
+      catch (error) {
+        console.error("Migrated AgriRenta media references could not be cached locally.", error);
+        toast("Storage copies succeeded, but the local cache could not update. Reload before making other changes.");
+        return;
+      }
+      const message = result.remaining
+        ? `Moved ${result.migrated} files. ${result.remaining} eligible files remain; run the next batch when ready.`
+        : "Media migration complete. No eligible legacy files remain.";
+      const status = $("#mediaMigrationStatus");
+      if (status) status.textContent = message;
+      toast(message);
+    } catch (err) {
+      toast(err.message || "Could not reach the AgriRenta backend.");
+    }
   } else if (k === "updatelocation") {
     const item = db.eq.find(x => String(x.id) === String(d.eq) && x.owner === u.email);
     if (!item) return toast("Equipment listing not found.");
@@ -1152,8 +1745,14 @@ document.addEventListener("submit", async (e) => {
     const photo = f.querySelector('input[name="photo"]').files[0];
     if (photo && !photo.type.startsWith("image/")) return toast("Choose an image file for the equipment photo.");
     let updatedPhoto;
-    try { if (photo) updatedPhoto = await compressImage(photo, 1200, .78); }
-    catch (err) { return toast("Could not read the equipment photo. Try a different image."); }
+    try {
+      if (photo) {
+        const compressed = await compressImage(photo, 1200, .78);
+        updatedPhoto = serverApiEnabled
+          ? (await uploadStoredMedia(await dataUrlToBlob(compressed), "equipment-photo")).reference
+          : compressed;
+      }
+    } catch (err) { return toast(err.message || "Could not save the equipment photo."); }
     item.name = name;
     item.spec = (d.spec || "").trim();
     item.cat = category;
@@ -1168,18 +1767,37 @@ document.addEventListener("submit", async (e) => {
     item.updatedAt = new Date().toISOString();
     u.v.papers = "review";
     if (!await save()) return;
-    toast("Equipment details saved and sent to admin for review.");
+    toast("Equipment details saved and sent to the administrator for review.");
     go("#/listings");
   } else if (k === "cashout") {
-    if(!u||u.role!=="owner") return toast("Only equipment owners can request a cash out.");
-    const earned=db.bookings.filter(b=>b.owner===u.email&&b.status==="returned").reduce((sum,b)=>sum+Number(b.total||0)*.9,0);
-    const prior=db.withdrawals.filter(w=>w.owner===u.email&&["pending","approved","paid"].includes(w.status)).reduce((sum,w)=>sum+Number(w.amount||0),0);
-    const amount=Number(d.amount); if(!Number.isFinite(amount)||amount<100||amount>earned-prior+0.001) return toast("Enter an amount within your available balance (minimum ₱100).");
-    if(!d.accountName.trim()||!d.accountRef.trim()) return toast("Enter the wallet account details.");
-    db.withdrawals.push({id:"WD-"+Date.now(),owner:u.email,amount,method:d.method,accountName:d.accountName.trim(),accountRef:d.accountRef.trim(),status:"pending",createdAt:new Date().toISOString()});if(!await save()) return;toast("Cash-out request sent to admin for manual processing.");rerender();
+    return toast("Owner cash-outs are disabled because rental payments go directly to equipment owners.");
+  } else if (k === "commissioncashoutsimulation") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can record a commission cash-out simulation.");
+    const amount = Number(d.amount);
+    const method = String(d.method || "");
+    const accountName = String(d.accountName || "").trim();
+    const accountRef = String(d.accountRef || "").trim();
+    if (!Number.isFinite(amount) || amount < 0.01) return toast("Enter a valid simulation amount.");
+    if (!["GCash", "Maya", "PayPal"].includes(method) || !accountName || !accountRef) {
+      return toast("Enter a valid method and test wallet details.");
+    }
+    db.commissionWithdrawals.push({
+      id:"SIM-CM-" + Date.now(),
+      admin:u.email,
+      amount,
+      method,
+      accountName,
+      accountRef,
+      status:"simulated",
+      source:"simulation",
+      createdAt:new Date().toISOString()
+    });
+    if (!await save()) return;
+    toast(`Cash-out simulation recorded for ${peso(amount)} via ${method}. No funds were transferred.`);
+    rerender();
   } else if (k === "commissioncashout") {
-    if(!u||u.role!=="admin") return toast("Only admin can request a commission cash out.");
-    const earned=db.bookings.filter(b=>b.status==="returned").reduce((sum,b)=>sum+Number(b.total||0)*.1,0);
+    if(!u||u.role!=="admin") return toast("Only an administrator can request a commission cash out.");
+    const earned=db.commissionPayments.filter(payment=>payment.status==="verified"&&payment.source!=="demo").reduce((sum,payment)=>sum+Number(payment.amount||0),0);
     const allocated=db.commissionWithdrawals.filter(w=>w.admin===u.email&&["pending","paid"].includes(w.status)).reduce((sum,w)=>sum+Number(w.amount||0),0);
     const amount=Number(d.amount);
     if(!Number.isFinite(amount)||amount<100||amount>earned-allocated+0.001) return toast("Enter an amount within the available commission balance (minimum ₱100).");
@@ -1193,20 +1811,35 @@ document.addEventListener("submit", async (e) => {
     if(!orcr) return toast("Choose the required OR/CR registration paper.");
     const readFile=file=>new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve({name:file.name,type:file.type,data:reader.result});reader.onerror=()=>reject(new Error("Could not read one of the selected files."));reader.readAsDataURL(file);});
     try {
-      const encodedPhotos=await Promise.all(photos.map(async file=>({name:file.name,type:"image/jpeg",data:await compressImage(file,1600,.84)})));
-      const [encodedOrcr,encodedPermit]=await Promise.all([readFile(orcr),permit?readFile(permit):null]);
+      const encodedPhotos=await Promise.all(photos.map(async file=>{
+        const compressed=await compressImage(file,1600,.84);
+        const data=serverApiEnabled
+          ? (await uploadStoredMedia(await dataUrlToBlob(compressed),"equipment-photo")).reference
+          : compressed;
+        return {name:file.name,type:"image/jpeg",data};
+      }));
+      const storeDocument=async file=>{
+        if(!file) return null;
+        if(!serverApiEnabled) return readFile(file);
+        const uploadFile=file.type.startsWith("image/")
+          ? await dataUrlToBlob(await compressImage(file,2200,.9))
+          : file;
+        const {reference}=await uploadStoredMedia(uploadFile,"equipment-document");
+        return {name:file.name,type:uploadFile.type,data:reference};
+      };
+      const [encodedOrcr,encodedPermit]=await Promise.all([storeDocument(orcr),storeDocument(permit)]);
       const cat=(d.catCustom||"").trim()||d.cat; const item={id:Date.now(),name:(d.name||"").trim(),spec:(d.spec||"").trim(),cat,img:encodedPhotos[0].data,photos:encodedPhotos,orcr:encodedOrcr,permit:encodedPermit,price:Number(d.price),rating:0,n:0,owner:u.email,location:(d.location||"").trim(),visible:d.visible!=="false",status:"review",createdAt:new Date().toISOString(),unavailableDates:JSON.parse(d.unavailableDates||"[]")};
       if(!item.name||!item.location||!Number.isFinite(item.price)||item.price<1) return toast("Complete the equipment name, location, and valid daily price.");
-      db.eq.push(item); u.v.papers="review"; for(const day of item.unavailableDates) db.availability.push({id:Date.now()+Math.random(),eq:Number(item.id),owner:u.email,start:day,end:day,reason:"Owner marked unavailable before upload"}); if(!await save()) return; draftUnavailableDates=[]; toast("Equipment and papers uploaded for admin review. Customers will see it after approval."); go("#/listings");
-    } catch(err) { toast(err.message||"Could not process the selected uploads. Please try again."); }
+      db.eq.push(item); u.v.papers="review"; for(const day of item.unavailableDates) db.availability.push({id:Date.now()+Math.random(),eq:Number(item.id),owner:u.email,start:day,end:day,reason:"Owner marked unavailable before upload"}); if(!await save()) return; draftUnavailableDates=[]; toast("Equipment and papers uploaded for administrator review. Customers will see it after approval."); go("#/listings");
+    } catch(err) { toast(err.message||"Could not process or store the selected uploads. Please try again."); }
   } else if (k === "adminrating") {
-    if (!u || !["customer", "owner"].includes(u.role)) return toast("Only customers and equipment owners can rate admin support.");
+    if (!u || !["customer", "owner"].includes(u.role)) return toast("Only customers and equipment owners can rate administrator support.");
     const adminUser = db.users.find(x => x.role === "admin");
-    if (!adminUser) return toast("Admin account was not found.");
+    if (!adminUser) return toast("Administrator account was not found.");
     const existing = db.reviews.find(x => x.type === "admin" && x.from === u.email);
     const reviewData = { type: "admin", to: adminUser.email, from: u.email, stars: rate.stars, text: (d.text || "").trim(), date: new Date().toLocaleDateString("en-US", { month: "short", day: "2-digit", year: "numeric" }) };
     if (existing) Object.assign(existing, reviewData); else db.reviews.push(reviewData);
-    save(); toast(existing ? "Admin rating updated." : "Thanks for rating AgriRenta admin support!"); rerender();
+    save(); toast(existing ? "Administrator rating updated." : "Thanks for rating AgriRenta administrator support!"); rerender();
   } else if (k === "message") {
     const body = (d.text || "").trim();
     if (!body) return toast("Please enter a message.");
@@ -1225,6 +1858,8 @@ document.addEventListener("submit", async (e) => {
     if(!await save()) return; toast("Message sent."); rerender();
   } else if (k === "register") {
     const email = d.email.trim().toLowerCase();
+    const passwordError = passwordValidationError(String(d.pw || ""));
+    if (passwordError) return toast(passwordError);
     if (d.pw !== d.pw2) return toast("Passwords do not match.");
     if (db.users.some((y) => y.email === email)) return toast("That email is already registered.");
     if (serverApiEnabled) {
@@ -1232,22 +1867,68 @@ document.addEventListener("submit", async (e) => {
         const response = await fetch("/api/register", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, name:d.name, phone:d.phone, role:regRole, password:d.pw }) });
         const result = await response.json();
         if (!response.ok || !result.ok) return toast(result.error || "Could not create account.");
+        go("#/verify-email/" + encodeURIComponent(email));
       } catch (err) { return toast("Could not reach the AgriRenta backend."); }
+      return;
     }
-    db.users.push({ email, name: d.name, role: regRole, phone: d.phone, pw: serverApiEnabled ? undefined : d.pw, v: { email: 1 } }); db.me = email; save(); go("#/verify-mobile");
-  } else if (k === "otp") { u.v.mobile = 1; save(); toast("Mobile verified."); go("#/verify-id"); }
+    let localPasswordHash;
+    try { localPasswordHash = await hashLocalPassword(d.pw); }
+    catch (err) { return toast(err.message || "Could not securely store the local password."); }
+    const newUser = { email, name: d.name, role: regRole, phone: d.phone, v: {} };
+    if (localPasswordHash) newUser.pwHash = localPasswordHash;
+    db.users.push(newUser); db.me = email;
+    if (!await save()) return;
+    go("#/verify-email/" + encodeURIComponent(email));
+  } else if (k === "emailotp") {
+    const email = String(d.email || "").trim().toLowerCase();
+    const code = String(d.token || "").trim();
+    if (!/^\d{6}$/.test(code)) return toast("Enter the complete 6-digit email code.");
+    if (serverApiEnabled) {
+      try {
+        const response = await fetch("/api/verify-email", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, token:code }) });
+        const result = await response.json();
+        if (!response.ok || !result.ok) return toast(result.error || "Could not verify your email.");
+        const stateResponse = await fetch("/api/state", { credentials:"same-origin", headers:{"Accept":"application/json"} });
+        const snapshot = await stateResponse.json();
+        if (!stateResponse.ok || !snapshot.ok || !snapshot.state) return toast(snapshot.error || "Your email is verified, but your account data could not be loaded. Please log in.");
+        demoCatalogChanged = normalizeState(snapshot.state);
+        db.me = result.user.email;
+        if (demoCatalogChanged) {
+          if (!await save()) return;
+        } else {
+          localStorage.setItem("agri", JSON.stringify(db));
+        }
+        go("#/verify-id");
+      } catch (err) { toast("Could not complete email verification. Check your connection and try again."); }
+      return;
+    }
+    const localUser = db.users.find((item) => item.email === email);
+    if (!localUser) return toast("Local demo account was not found.");
+    localUser.v = localUser.v && typeof localUser.v === "object" ? localUser.v : {};
+    localUser.v.email = 1;
+    db.me = email;
+    if (!await save()) return;
+    toast("Local demo email verified. No email was sent in local-only mode.");
+    go("#/verify-id");
+  }
   else if (k === "id") {
     const idFiles = [...f.querySelectorAll('input[type="file"]')].map((i) => i.files[0]);
     if (idFiles.length < 3 || idFiles.some((x) => !x || !x.type.startsWith("image/"))) return toast("Please choose an image for the ID front, ID back, and selfie.");
     toast("Uploading your documents...");
     try {
-      const [front, back, selfie] = await Promise.all(idFiles.map((x) => compressImage(x, 2200, .9)));
+      const compressed = await Promise.all(idFiles.map((file) => compressImage(file, 2200, .9)));
+      const uploaded = serverApiEnabled
+        ? await Promise.all(compressed.map(async (dataUrl) =>
+          (await uploadStoredMedia(await dataUrlToBlob(dataUrl), "identity-document")).reference
+        ))
+        : compressed;
+      const [front, back, selfie] = uploaded;
       u.idDocs = { type: idType, front, back, selfie, submittedAt: new Date().toISOString() };
       u.v.id = "review"; u.v.selfie = "review";
       if (!await save()) return;
       toast("Your ID photos were submitted for review.");
       go("#/verification");
-    } catch (err) { toast("Could not read one of the images. Please try another file."); }
+    } catch (err) { toast(err.message || "Could not upload one of the images. Please try again."); }
   }
   else if (k === "papers") { u.v.papers = "review"; save(); toast("Equipment submitted for review."); go("#/verification"); }
   else if (k === "book") {
@@ -1270,7 +1951,22 @@ document.addEventListener("submit", async (e) => {
     if (gcashDemo) {
       try {
         await persistState();
-        window.location.href = `AgriRenta_GCash_Payment_Neumorphism_Green.html?reference=${encodeURIComponent(ref)}&amount=${encodeURIComponent(booking.total)}`;
+        const paymentUrl = new URL("custormerggcash.html", location.href);
+        paymentUrl.searchParams.set("reference", ref);
+        paymentUrl.searchParams.set("amount", String(booking.total));
+        paymentUrl.searchParams.set("recipient", usr(booking.owner).name);
+        paymentUrl.searchParams.set("equipment", booking.equipmentName);
+        paymentUrl.searchParams.set("start", booking.start);
+        paymentUrl.searchParams.set("end", booking.end);
+        const recipientAccount = usr(booking.owner);
+        const recipientPhoneKey = `agrirenta-gcash-recipient:${ref}`;
+        try {
+          if (recipientAccount.v?.mobile && recipientAccount.phone) sessionStorage.setItem(recipientPhoneKey, recipientAccount.phone);
+          else sessionStorage.removeItem(recipientPhoneKey);
+        } catch (storageError) {
+          console.warn("Could not save the verified GCash recipient number for this checkout.", storageError);
+        }
+        window.location.href = paymentUrl.href;
         return;
       } catch (err) {
         toast(err.message || "Could not save the booking. Please try again.");
@@ -1291,6 +1987,19 @@ document.addEventListener("submit", async (e) => {
   else if (k === "blockdates") { if (d.end < d.start) return toast("End date must be on or after the start date."); const owns = db.eq.some((x) => String(x.id) === String(d.eq) && x.owner === u.email); if (!owns) return toast("Choose your own equipment."); const conflict = db.availability.some((x) => String(x.eq) === String(d.eq) && d.start <= x.end && d.end >= x.start); if (conflict) return toast("These dates overlap an existing blocked period."); db.availability.push({ id: Date.now(), eq: Number(d.eq), owner: u.email, start: d.start, end: d.end, reason: d.reason || "" }); save(); toast("Unavailable dates saved."); rerender(); }
 });
 async function initAgriRenta() {
+  try {
+    const changed = await migrateLocalPasswords(db);
+    if (changed) localStorage.setItem("agri", JSON.stringify(db));
+    const pending = readPendingState();
+    if (pending && await migrateLocalPasswords(pending)) {
+      localStorage.setItem("agri_pending_sync", JSON.stringify(pending));
+    }
+  } catch (err) {
+    console.error("AgriRenta could not securely migrate saved local passwords.", err);
+    app.textContent = "AgriRenta could not securely migrate saved passwords in this browser. Please connect to Supabase or contact support before continuing.";
+    return;
+  }
+  render();
   try {
     const response = await fetch("/api/state", { credentials:"same-origin", headers:{"Accept":"application/json"} });
     if (response.ok) {
@@ -1321,6 +2030,7 @@ async function initAgriRenta() {
   } catch (err) {
     console.info("AgriRenta API not available; using local demo storage. Check supabase-config.js to enable Supabase persistence.");
   }
+  serverApiChecked = true;
   const params = new URLSearchParams(location.search);
   const requestedEquipment = params.get("book");
   if (requestedEquipment) sessionStorage.setItem("agri_book_after_login", requestedEquipment);
@@ -1328,7 +2038,10 @@ async function initAgriRenta() {
   const gcashReference = params.get("reference");
   if (gcashDemoReturn === "complete" && gcashReference) {
     const booking = db.bookings.find(item => item.ref === gcashReference && item.renter === db.me);
-    if (booking && booking.pay === "GCash" && booking.paymentStatus !== "paid") {
+    let paymentError = "";
+    if (!booking || booking.pay !== "GCash") {
+      paymentError = "Could not find this GCash demo booking for your account.";
+    } else if (!["paid", "demo_completed"].includes(booking.paymentStatus)) {
       try {
         if (serverApiEnabled) {
           const response = await fetch("/api/payment/gcash-demo-complete", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({reference:gcashReference}) });
@@ -1336,13 +2049,50 @@ async function initAgriRenta() {
           if (!response.ok || !result.ok) throw new Error(result.error || "Could not update GCash demo status.");
         }
         booking.paymentStatus = "demo_completed";
+        booking.paymentVerifiedAt = booking.paymentVerifiedAt || new Date().toISOString();
         await persistState();
       } catch (err) {
         console.warn("Could not save GCash demo status.", err);
+        paymentError = err.message || "The demo payment could not be recorded. Please try again.";
       }
     }
     history.replaceState({}, document.title, location.pathname + location.hash);
     go("#/submitted/" + encodeURIComponent(gcashReference));
+    if (paymentError) toast(paymentError);
+  }
+  if (params.get("commissionDemo") === "complete") {
+    const commissionId = params.get("commissionId") || "";
+    const attemptId = params.get("attemptId") || "";
+    const receipt = {
+      amount:Number(params.get("amount")),
+      rentalAmount:Number(params.get("rentalAmount")),
+      commissionAmount:Number(params.get("commissionAmount")),
+      bookingRef:params.get("bookingRef") || "",
+    };
+    if (!db.me || me()?.role !== "owner") {
+      history.replaceState({}, document.title, location.pathname + location.hash);
+      toast("Log in as the equipment owner to complete the simulated commission payment.");
+      go("#/login");
+    } else {
+      try {
+        const response = await fetch("/api/commission/demo-payment", {
+          method:"POST",
+          credentials:"same-origin",
+          headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({ commissionId, attemptId, ...receipt }),
+        });
+        const result = await response.json();
+        if (!response.ok || !result.ok) throw new Error(result.error || "Could not complete the simulated commission payment.");
+        applyApiState(result.state);
+        history.replaceState({}, document.title, location.pathname + location.hash);
+        toast("GCash simulation recorded. The commission balance is updated; no real money was transferred.");
+        go("#/dashboard");
+      } catch (err) {
+        history.replaceState({}, document.title, location.pathname + location.hash);
+        toast(err.message || "Could not complete the simulated commission payment.");
+        go("#/dashboard");
+      }
+    }
   }
   render();
 }
