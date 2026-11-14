@@ -114,6 +114,7 @@
     "POST /api/payment/gcash-demo-complete": passthrough("POST", "/payment/gcash-demo-complete"),
     "POST /api/commission/payment": passthrough("POST", "/commission/payment"),
     "POST /api/commission/demo-payment": passthrough("POST", "/commission/demo-payment"),
+    "POST /api/commission/archive": passthrough("POST", "/commission/archive"),
     "POST /api/commission/payment-review": passthrough("POST", "/commission/payment-review"),
     "POST /api/commission/dispute": passthrough("POST", "/commission/dispute"),
     "POST /api/commission/dispute-review": passthrough("POST", "/commission/dispute-review"),
@@ -165,8 +166,8 @@
     "POST /api/verify-email": async (body) => {
       const email = String(body.email || "").trim().toLowerCase();
       const token = String(body.token || "").trim();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6}$/.test(token)) {
-        return reply(400, { ok: false, error: "Enter the 6-digit code sent to your email address." });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6,8}$/.test(token)) {
+        return reply(400, { ok: false, error: "Enter the verification code sent to your email address (6 to 8 digits)." });
       }
       const { data, error } = await sb.auth.verifyOtp({ email, token, type: "signup" });
       let verifiedUser = data && data.user;
