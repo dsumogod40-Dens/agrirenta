@@ -848,8 +848,8 @@ const V = {
 
   "verify-email": (email) => {
     const address = decodeURIComponent(email || "");
-    return authCard(`<h1 style="text-align:center;">Verify your email</h1><p>${serverApiEnabled ? `Enter the verification code we sent to <b>${escapeHtml(address || "your email address")}</b>.` : "Local-only demo mode: no email is sent. Enter any 6 to 8 digits."}</p>
-      <form data-form="emailotp"><input type="hidden" name="email" value="${escapeHtml(address)}"><div class="otp"><input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" aria-label="Email verification code" required></div>
+    return authCard(`<h1 style="text-align:center;">Verify your email</h1><p>${serverApiEnabled ? `Enter the 6-digit code we sent to <b>${escapeHtml(address || "your email address")}</b>.` : "Local-only demo mode: no email is sent. Enter any six digits."}</p>
+      <form data-form="emailotp"><input type="hidden" name="email" value="${escapeHtml(address)}"><div class="otp"><input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" aria-label="6-digit email verification code" required></div>
       <button class="btn btn-primary btn-block">Verify email</button></form>
       ${serverApiEnabled ? `<button class="btn btn-soft btn-block" type="button" data-act="resend-email" data-v="${escapeHtml(address)}">Resend email code</button>` : ""}
       <a class="link" href="#/login">Back to log in</a>`);
@@ -1882,7 +1882,7 @@ document.addEventListener("submit", async (e) => {
   } else if (k === "emailotp") {
     const email = String(d.email || "").trim().toLowerCase();
     const code = String(d.token || "").trim();
-    if (!/^\d{6,8}$/.test(code)) return toast("Enter the complete verification code (6 to 8 digits).");
+    if (!/^\d{6}$/.test(code)) return toast("Enter the complete 6-digit email code.");
     if (serverApiEnabled) {
       try {
         const response = await fetch("/api/verify-email", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ email, token:code }) });
