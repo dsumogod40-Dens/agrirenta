@@ -489,6 +489,7 @@ db.notificationReads = db.notificationReads && typeof db.notificationReads === "
 db.commissionWithdrawals = Array.isArray(db.commissionWithdrawals) ? db.commissionWithdrawals : [];
 db.commissionRecords = Array.isArray(db.commissionRecords) ? db.commissionRecords : [];
 db.commissionPayments = Array.isArray(db.commissionPayments) ? db.commissionPayments : [];
+db.commissionArchives = Array.isArray(db.commissionArchives) ? db.commissionArchives : [];
 db.commissionSettings = db.commissionSettings && typeof db.commissionSettings === "object"
   ? { paymentInstructions:"", gracePeriodDays:7, ...db.commissionSettings }
   : { paymentInstructions:"", gracePeriodDays:7 };
@@ -511,6 +512,7 @@ const normalizeState = (state) => {
   db.commissionWithdrawals = Array.isArray(db.commissionWithdrawals) ? db.commissionWithdrawals : [];
   db.commissionRecords = Array.isArray(db.commissionRecords) ? db.commissionRecords : [];
   db.commissionPayments = Array.isArray(db.commissionPayments) ? db.commissionPayments : [];
+  db.commissionArchives = Array.isArray(db.commissionArchives) ? db.commissionArchives : [];
   db.commissionSettings = db.commissionSettings && typeof db.commissionSettings === "object"
     ? { paymentInstructions:"", gracePeriodDays:7, ...db.commissionSettings }
     : { paymentInstructions:"", gracePeriodDays:7 };
@@ -813,6 +815,91 @@ const ownerListingPanel = (email, ownProfile) => {
     <div class="grid">${listings.map(item => `<div><div class="owner-profile-listing-status">${pill(item.status || "approved")}${item.visible === false ? `<span class="pill warn">Hidden</span>` : ""}</div>${eqCard(item)}</div>`).join("") || "<p>No approved equipment listings yet.</p>"}</div>`;
 };
 
+const ownerCommissionPage = (tab, u, recordId) => {
+  const records = db.commissionRecords.filter(record => record.owner === u.email);
+  const payments = db.commissionPayments.filter(payment => payment.owner === u.email);
+  const archives = db.commissionArchives.filter(item => item.owner === u.email);
+  const isArchived = (itemType, itemId) => archives.some(item => item.itemType === itemType && item.itemId === itemId);
+  const visibleArchives = archives.filter(item => item.hiddenFromOwner !== true);
+  const isVisibleArchive = (itemType, itemId) => visibleArchives.some(item => item.itemType === itemType && item.itemId === itemId);
+  const commissions = records.filter(record => !isArchived("record", record.id));
+  const activePayments = payments.filter(payment => !isArchived("payment", payment.id));
+  const payableRecords = commissions.filter(record =>
+    commissionRemaining(record) >= 0.01 && !["disputed", "waived"].includes(record.status)
+  );
+  const selectedRecord = recordId ? payableRecords.find(record => record.id === recordId) : null;
+  const payableRecordsToShow = recordId ? (selectedRecord ? [selectedRecord] : []) : payableRecords;
+  const outstanding = records.filter(record => !["waived", "disputed"].includes(record.status))
+    .reduce((sum, record) => sum + commissionRemaining(record), 0);
+  const paidCommission = records.reduce((sum, record) => sum + Number(record.paidAmount || 0), 0);
+  const overdue = records.filter(record => commissionDisplayStatus(record) === "Overdue")
+    .reduce((sum, record) => sum + commissionRemaining(record), 0);
+  const disputed = records.filter(record => record.status === "disputed")
+    .reduce((sum, record) => sum + commissionRemaining(record), 0);
+  const pendingPayment = payments.some(payment => payment.status === "pending_verification");
+  const canArchiveRecord = record => record.status !== "disputed"
+    && (record.status === "waived" || commissionRemaining(record) < 0.01);
+  const canArchivePayment = payment => ["simulated", "verified", "rejected"].includes(payment.status);
+  const archiveButtons = (itemType, itemId, archived, allowed) => {
+    if (!archived && !allowed) return "";
+    if (!archived) return `<button class="btn btn-soft btn-sm" type="button" data-act="archivecommission" data-kind="${itemType}" data-v="${escapeHtml(itemId)}" ${!serverApiEnabled ? "disabled" : ""}>Archive</button>`;
+    return `<button class="btn btn-soft btn-sm" type="button" data-act="restorecommission" data-kind="${itemType}" data-v="${escapeHtml(itemId)}" ${!serverApiEnabled ? "disabled" : ""}>Restore</button> <button class="btn btn-soft btn-sm btn-danger" type="button" data-act="deletecommission" data-kind="${itemType}" data-v="${escapeHtml(itemId)}" aria-label="Remove archived ${itemType} from your view" ${!serverApiEnabled ? "disabled" : ""}>Delete</button>`;
+  };
+  const renderRecord = (record, archived, allowPayment) => {
+    const status = commissionDisplayStatus(record);
+    const booking = db.bookings.find(item => item.ref === record.bookingRef);
+    const equipment = booking ? bookingEquipment(booking) : { name:"Equipment rental" };
+    const remaining = commissionRemaining(record);
+    const balanceLabel = record.status === "waived" ? "Waived"
+      : record.status === "disputed" ? "Under dispute"
+        : remaining < 0.005 ? "Remaining commission" : "Outstanding";
+    const settledLabel = commissionHasSimulationPayment(record) ? "Simulated" : "Settled";
+    const canPaySimulation = allowPayment && !archived && remaining >= 0.01
+      && !["disputed", "waived"].includes(record.status);
+    const dispute = archived ? "" : record.status === "disputed"
+      ? `<p>Dispute submitted: ${escapeHtml(record.disputeReason || "")} · Pending administrator review</p>`
+      : remaining > 0 && record.status !== "waived"
+        ? `<form data-form="commissiondispute" data-commission-id="${escapeHtml(record.id)}" class="stack"><label>Dispute this commission</label><textarea name="reason" minlength="5" maxlength="1000" required placeholder="Explain why this commission record is incorrect."></textarea><button class="btn btn-soft btn-sm">Submit dispute</button></form>`
+        : "";
+    return `<article id="commission-${escapeHtml(record.id)}" class="neu commission-record"><div><b>${escapeHtml(record.bookingRef)} · ${escapeHtml(equipment.name)}</b><p>Customer paid ${peso(record.rentalAmount)} · Commission ${(Number(record.rate || .1) * 100).toFixed(0)}% = ${peso(record.amount)}</p><p>${balanceLabel}: <b>${peso(remaining)}</b> · <span class="pill commission-status">${escapeHtml(status)}</span></p><small>Earned ${record.earnedAt ? new Date(record.earnedAt).toLocaleString() : "—"} · Due ${record.dueAt ? new Date(record.dueAt).toLocaleString() : "—"}${record.paidAmount ? ` · ${settledLabel} ${peso(record.paidAmount)}` : ""}</small>
+      ${canPaySimulation ? `<button class="btn btn-primary btn-sm" type="button" data-act="paycommissiondemo" data-v="${escapeHtml(record.id)}" ${!serverApiEnabled || pendingPayment ? "disabled" : ""}>Pay ${peso(remaining)} commission via GCash (simulation)</button>` : ""}
+      ${archiveButtons("record", record.id, archived, canArchiveRecord(record))}${dispute}</div></article>`;
+  };
+  const renderPayment = (payment, archived) => `<div id="payment-${escapeHtml(payment.id)}" class="neu item"><div><b>${peso(payment.amount)} · Reference ${escapeHtml(payment.reference)}</b><p>${payment.source === "demo" ? "GCash simulation · no real money transferred" : `Submitted ${payment.createdAt ? new Date(payment.createdAt).toLocaleString() : "—"}`}</p>${payment.reviewNote ? `<small>${escapeHtml(payment.reviewNote)}</small>` : ""}</div><span class="pill commission-status">${payment.source === "demo" ? "Simulation only" : escapeHtml(String(payment.status || "").replaceAll("_"," "))}</span>${archiveButtons("payment", payment.id, archived, canArchivePayment(payment))}</div>`;
+  const renderArchivedBooking = booking => {
+    const equipment = E(booking.eq) || bookingEquipment(booking);
+    return `<article id="booking-${escapeHtml(booking.ref)}" class="neu"><div class="item"><div><b>${escapeHtml(usr(booking.renter).name)}</b><p>${escapeHtml(equipment.name)} · ${fmt(booking.start)} – ${fmt(booking.end)} · ${peso(booking.total)}</p></div><span class="pill">${escapeHtml(booking.status)}</span></div><p><b>Payment:</b> ${escapeHtml(booking.pay || "Not selected")} · <b>Status:</b> ${escapeHtml(String(booking.paymentStatus || "pending").replaceAll("_"," "))}</p>${archiveButtons("booking", booking.ref, true, true)}</article>`;
+  };
+  const archivedRecords = records.filter(record => isVisibleArchive("record", record.id));
+  const archivedPayments = payments.filter(payment => isVisibleArchive("payment", payment.id));
+  const archivedBookings = db.bookings.filter(booking =>
+    booking.owner === u.email && isVisibleArchive("booking", booking.ref)
+  );
+  const visibleArchiveCount = visibleArchives.length;
+  const hiddenArchiveCount = archives.length - visibleArchiveCount;
+  const currentTab = ["pay", "records", "history", "archived"].includes(tab) ? tab : "pay";
+  const content = currentTab === "pay"
+    ? `<h3>Pay commission</h3>${recordId && !selectedRecord ? `<p class="payment-note" role="status">This commission is no longer payable. <a href="#/owner-commission/records">View commission records</a>.</p>` : ""}${pendingPayment ? `<p class="server-mode-warning" role="status">A manual payment is pending administrator review. Wait for that review before starting another GCash simulation.</p>` : ""}<div class="stack">${payableRecordsToShow.map(record => renderRecord(record, false, true)).join("") || (!recordId ? "<p>No outstanding commission to pay.</p>" : "")}</div>`
+    : currentTab === "records"
+      ? `<h3>Commission records</h3><div class="stack">${commissions.map(record => renderRecord(record, false, false)).join("") || "<p>No active commission records.</p>"}</div>`
+      : currentTab === "history"
+        ? `<h3>Payment history</h3><div class="stack">${activePayments.map(payment => renderPayment(payment, false)).join("") || "<p>No commission payments yet.</p>"}</div>`
+        : `<h3>Archived entries</h3><p>Archived rentals and commission entries are hidden from your regular lists only. AgriRenta keeps them in its records. Delete removes an item from your view but does not erase the accounting or rental record.</p><div class="stack">${archivedBookings.map(renderArchivedBooking).join("")}${archivedRecords.map(record => renderRecord(record, true, false)).join("")}${archivedPayments.map(payment => renderPayment(payment, true)).join("")}</div>${!archivedRecords.length && !archivedPayments.length && !archivedBookings.length ? `<p>${hiddenArchiveCount ? "No archived entries to show. Deleted entries remain in AgriRenta's records." : "No archived entries yet."}</p>` : ""}`;
+  const tabs = [
+    ["pay", "Pay commission"],
+    ["records", "Commission records"],
+    ["history", "Payment history"],
+    ["archived", `Archived (${visibleArchiveCount})`],
+  ];
+  return [`<a class="btn btn-soft btn-sm" href="#/dashboard">← Owner dashboard</a><section class="neu commission-panel"><h1>My Commission</h1>
+    <p><b>How it works:</b> AgriRenta records 10% of the rental total after the rental is returned and payment is confirmed. Pay the amount shown by its due date (${commissionSettings().gracePeriodDays} calendar days after it is earned). Unpaid commission past its due date pauses your new bookings until it is settled. Submitting a dispute pauses enforcement while the administrator reviews it. You will receive an in-app message and notification for each commission.</p>
+    <p class="server-mode-warning" role="note">The GCash checkout is an academic simulation only. It does not connect to GCash or transfer real money. Never enter a real GCash PIN or password.</p>
+    ${serverApiEnabled ? "" : `<p class="server-mode-warning" role="status">Commission payment, dispute, and archive actions require a connected Supabase backend. Local-only mode cannot safely manage commission balances.</p>`}
+    <div class="grid stats"><div class="neu stat"><b>${peso(outstanding)}</b>Outstanding</div><div class="neu stat"><b>${peso(paidCommission)}</b>Settled (includes simulation)</div><div class="neu stat"><b>${peso(overdue)}</b>Overdue</div><div class="neu stat"><b>${peso(disputed)}</b>Under dispute</div></div>
+    <nav class="commission-nav" aria-label="My commission sections">${tabs.map(([key, label]) => `<a class="btn ${currentTab === key ? "btn-primary" : "btn-soft"}" href="#/owner-commission/${key}" ${currentTab === key ? 'aria-current="page"' : ""}>${label}</a>`).join("")}</nav>
+    <section aria-live="polite">${content}</section></section>`, "app"];
+};
+
 const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
@@ -1015,53 +1102,38 @@ const V = {
 
   /* owner */
   dashboard: (a, u) => {
-    const reqs = db.bookings.filter((b) => b.owner === u.email);
+    const ownerBookings = db.bookings.filter((b) => b.owner === u.email);
+    const reqs = ownerBookings.filter((b) =>
+      !db.commissionArchives.some(item => item.owner === u.email && item.itemType === "booking" && item.itemId === b.ref));
     const active = reqs.filter((b) => b.status === "approved").length;
-    const paidRentals = reqs.filter(commissionEligibleBooking);
+    const paidRentals = ownerBookings.filter(commissionEligibleBooking);
     const earn = paidRentals.reduce((sum, booking) => sum + Number(booking.total || 0) * (1 - 0.1), 0);
     const r = avg(u.email);
-    const settings = commissionSettings();
-    const commissions = db.commissionRecords.filter(record => record.owner === u.email);
-    const payments = db.commissionPayments.filter(payment => payment.owner === u.email);
-    const outstanding = commissions.filter(record => !["waived", "disputed"].includes(record.status)).reduce((sum, record) => sum + commissionRemaining(record), 0);
-    const paidCommission = commissions.reduce((sum, record) => sum + Number(record.paidAmount || 0), 0);
-    const overdue = commissions.filter(record => commissionDisplayStatus(record) === "Overdue").reduce((sum, record) => sum + commissionRemaining(record), 0);
-    const disputed = commissions.filter(record => record.status === "disputed").reduce((sum, record) => sum + commissionRemaining(record), 0);
-    const pendingPayment = payments.some(payment => payment.status === "pending_verification");
-    const commissionPanel = `<section id="mycommission" class="neu commission-panel"><h2>My Commission</h2>
-      <p><b>How it works:</b> AgriRenta records 10% of the rental total after the rental is returned and payment is confirmed. Pay the amount shown by its due date (${settings.gracePeriodDays} calendar days after it is earned). Unpaid commission past its due date pauses your new bookings until it is settled. Submitting a dispute pauses enforcement while the administrator reviews it. You will receive an in-app message and notification for each commission.</p>
-      <p class="server-mode-warning" role="note">The GCash checkout is an academic simulation only. It does not connect to GCash or transfer real money. Never enter a real GCash PIN or password.</p>
-      ${serverApiEnabled ? "" : `<p class="server-mode-warning" role="status">Commission payment, dispute, and verification actions require a connected Supabase backend. Local-only mode cannot safely manage commission balances.</p>`}
-      <div class="grid stats"><div class="neu stat"><b>${peso(outstanding)}</b>Outstanding</div><div class="neu stat"><b>${peso(paidCommission)}</b>Settled (includes simulation)</div><div class="neu stat"><b>${peso(overdue)}</b>Overdue</div><div class="neu stat"><b>${peso(disputed)}</b>Under dispute</div></div>
-      ${pendingPayment ? `<p class="server-mode-warning" role="status">A manual payment is pending administrator review. Wait for that review before starting another GCash simulation.</p>` : ""}
-      <h3 style="margin-top:1rem">Commission records</h3><div class="stack">${commissions.map(record => {
-        const status = commissionDisplayStatus(record);
-        const booking = db.bookings.find(item => item.ref === record.bookingRef);
-        const equipment = booking ? bookingEquipment(booking) : { name:"Equipment rental" };
-        const remaining = commissionRemaining(record);
-        const balanceLabel = record.status === "waived" ? "Waived"
-          : record.status === "disputed" ? "Under dispute"
-            : remaining < 0.005 ? "Remaining commission" : "Outstanding";
-        const settledLabel = commissionHasSimulationPayment(record) ? "Simulated" : "Settled";
-        const canPaySimulation = remaining >= 0.01 && !["disputed", "waived"].includes(record.status);
-        return `<article id="commission-${escapeHtml(record.id)}" class="neu commission-record"><div><b>${escapeHtml(record.bookingRef)} · ${escapeHtml(equipment.name)}</b><p>Customer paid ${peso(record.rentalAmount)} · Commission ${(Number(record.rate || .1) * 100).toFixed(0)}% = ${peso(record.amount)}</p><p>${balanceLabel}: <b>${peso(remaining)}</b> · <span class="pill commission-status">${status}</span></p><small>Earned ${record.earnedAt ? new Date(record.earnedAt).toLocaleString() : "—"} · Due ${record.dueAt ? new Date(record.dueAt).toLocaleString() : "—"}${record.paidAmount ? ` · ${settledLabel} ${peso(record.paidAmount)}` : ""}</small>
-        ${canPaySimulation ? `<button class="btn btn-primary btn-sm" type="button" data-act="paycommissiondemo" data-v="${escapeHtml(record.id)}" ${!serverApiEnabled || pendingPayment ? "disabled" : ""}>Pay ${peso(remaining)} commission via GCash (simulation)</button>` : ""}
-        ${record.status === "disputed" ? `<p>Dispute submitted: ${escapeHtml(record.disputeReason || "")} · Pending administrator review</p>` : commissionRemaining(record) > 0 && record.status !== "waived" ? `<form data-form="commissiondispute" data-commission-id="${escapeHtml(record.id)}" class="stack"><label>Dispute this commission</label><textarea name="reason" minlength="5" maxlength="1000" required placeholder="Explain why this commission record is incorrect."></textarea><button class="btn btn-soft btn-sm">Submit dispute</button></form>` : ""}</div></article>`;
-      }).join("") || "<p>No eligible completed rentals yet.</p>"}</div>
-      <h3 style="margin-top:1rem">Payment history</h3><div class="stack">${payments.map(payment => `<div id="payment-${escapeHtml(payment.id)}" class="neu item"><div><b>${peso(payment.amount)} · Reference ${escapeHtml(payment.reference)}</b><p>${payment.source === "demo" ? "GCash simulation · no real money transferred" : `Submitted ${new Date(payment.createdAt).toLocaleString()}`}</p>${payment.reviewNote ? `<small>${escapeHtml(payment.reviewNote)}</small>` : ""}</div><span class="pill commission-status">${payment.source === "demo" ? "Simulation only" : escapeHtml(payment.status.replaceAll("_"," "))}</span></div>`).join("") || "<p>No commission payments yet.</p>"}</div></section>`;
     return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <section class="platform-global-search"><label class="sr-only" for="ownerGlobalSearch">Search users, equipment, or locations</label><input id="ownerGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="ownerGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <div class="promo owner-banner"><video autoplay muted loop playsinline preload="metadata" poster="images/ownerbanner.png" aria-label="AgriRenta equipment owner banner"><source src="ownerbanner.mp4" type="video/mp4"></video></div>
     <div class="head"><div><h2>Owner portal</h2></div><span class="pill">${isVerified(u)?'ID verified owner':'Verification pending'}</span></div>
-    <div class="grid stats"><a class="neu stat stat-link" href="#/listings"><b>${String(db.eq.filter((e) => e.owner === u.email && e.status !== 'rejected').length).padStart(2, "0")}</b>Equipment listed <small>Open my listings →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(reqs.filter((b) => b.status === "pending").length).padStart(2, "0")}</b>Pending requests <small>Review requests →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(active).padStart(2, "0")}</b>Active rentals <small>View rentals →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="mycommission"><b>${peso(earn)}</b>Estimated owner share (90%) <small>After 10% commission · View commission →</small></a></div>
+    <div class="grid stats"><a class="neu stat stat-link" href="#/listings"><b>${String(db.eq.filter((e) => e.owner === u.email && e.status !== 'rejected').length).padStart(2, "0")}</b>Equipment listed <small>Open my listings →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(reqs.filter((b) => b.status === "pending").length).padStart(2, "0")}</b>Pending requests <small>Review requests →</small></a><a class="neu stat stat-link" href="#/dashboard" data-act="jump" data-v="rental-requests"><b>${String(active).padStart(2, "0")}</b>Active rentals <small>View rentals →</small></a><a class="neu stat stat-link" href="#/owner-commission"><b>${peso(earn)}</b>Estimated owner share (90%) <small>After 10% commission · View commission →</small></a></div>
     <a href="#/reviews" class="neu item card reputation-card"><span class="ico">★</span><div><small>Your reputation</small><h2>${r ? r.v.toFixed(1) : "–"} ${stars(r ? r.v : 0)}</h2><p>${r ? r.n : 0} reviews · ${isVerified(u) ? "ID verified owner" : "Verification pending"}</p></div></a>
-    ${commissionPanel}
-    <h2 id="rental-requests" style="margin-top:1.4rem">Rental requests</h2><div class="stack">${reqs.map((b) => { const c = usr(b.renter), e = E(b.eq) || bookingEquipment(b), rr = avg(c.email);
+    <h2 id="rental-requests" style="margin-top:1.4rem">Rental requests</h2><div class="stack">${reqs.map((b) => {
+      const c = usr(b.renter), e = E(b.eq) || bookingEquipment(b), rr = avg(c.email);
+      const commission = db.commissionRecords.find(item => item.bookingRef === b.ref && item.owner === u.email);
+      const commissionReady = commissionEligibleBooking(b);
+      const commissionArchived = commission && db.commissionArchives.some(item =>
+        item.owner === u.email && item.itemType === "record" && item.itemId === commission.id
+      );
+      const canPayCommission = commissionReady && commission && !commissionArchived
+        && commissionRemaining(commission) >= 0.01 && !["disputed", "waived"].includes(commission.status);
       return `<div id="booking-${escapeHtml(b.ref)}" class="neu"><div class="item"><a href="#/member/${encodeURIComponent(c.email)}" aria-label="View ${escapeHtml(c.name)} profile">${avatar(c)}</a><div><b><a href="#/member/${encodeURIComponent(c.email)}">${escapeHtml(c.name)}</a></b> ${isVerified(c) ? "✓" : ""}<p>${rr ? stars(rr.v) + " " + rr.v.toFixed(1) : "New renter"}</p></div>${pill(b.status)}</div><p>${escapeHtml(e.name)} · ${fmt(b.start)} – ${fmt(b.end)} · ${peso(b.total)}</p><p><b>Payment:</b> ${escapeHtml(b.pay || "Not selected")} · <b>Status:</b> ${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</p>
       ${b.status === "pending" ? `<button class="btn btn-primary btn-sm" data-act="approve" data-v="${b.ref}">Approve</button> ${b.pay === "GCash" ? `<p class="payment-note" role="note">GCash requests cannot be declined. Only COD requests can be declined.</p>` : `<button class="btn btn-soft btn-sm btn-danger" data-act="decline" data-v="${b.ref}">Decline</button>`}` : ""}
       ${b.pay === "Cash on Delivery (COD)" && b.paymentStatus !== "paid" && b.status !== "declined" ? `<button class="btn btn-soft btn-sm" data-act="markpaid" data-v="${b.ref}">Mark payment received</button>` : ""}
-      ${b.status === "approved" ? `<button class="btn btn-primary btn-sm" data-act="returned" data-v="${b.ref}">Mark returned</button>` : ""}
-      ${b.status === "returned" && !b.ratedRenter ? `<a class="btn btn-primary btn-sm" href="#/rate/${b.ref}">Rate renter</a>` : ""}</div>`; }).join("") || "<p>No requests yet.</p>"}</div>`, "app"]; },
+      ${b.status === "approved" ? `<button class="btn btn-primary btn-sm" data-act="returned" data-v="${b.ref}">Mark returned (commission applies)</button><p class="payment-note" role="note">After the renter's payment is confirmed, your 10% commission will appear under <a href="#/owner-commission">My Commission</a> and must be paid by its due date.</p>` : ""}
+      ${canPayCommission ? `<a class="btn btn-primary btn-sm" href="#/owner-commission/pay/${encodeURIComponent(commission.id)}">Pay commission ${peso(commissionRemaining(commission))} (simulation)</a>` : ""}
+      ${commissionReady && commission && !canPayCommission && !commissionArchived ? `<a class="btn btn-soft btn-sm" href="#/owner-commission/records">View commission record</a>` : ""}
+      ${commissionReady && b.status === "returned" && !b.ratedRenter ? `<a class="btn btn-soft btn-sm" href="#/rate/${encodeURIComponent(b.ref)}">Rate renter</a>` : ""}
+      ${b.status === "returned" && !commissionReady ? `<p class="payment-note" role="note">Confirm the rental payment to unlock commission and rating actions.</p>` : ""}
+      ${b.status === "returned" ? `<button class="btn btn-soft btn-sm" type="button" data-act="archivecommission" data-kind="booking" data-v="${escapeHtml(b.ref)}">Archive rental</button>` : ""}</div>`; }).join("") || "<p>No requests yet.</p>"}</div>`, "app"]; },
+  "owner-commission": (tab, u, recordId) => ownerCommissionPage(tab, u, recordId),
 
   listings: (a, u) => { const mine=db.eq.filter(e=>e.owner===u.email); return [`<h1>My listings</h1><p>Manage your equipment, daily rates, visibility, and unavailable dates.</p><div class="owner-listings owner-listings-grid">${mine.map(e=>`<section class="neu owner-listing"><div class="owner-listing-card single">${eqCard(e)}</div><div class="owner-listing-status"><b>Listing status:</b> ${pill(e.status||'approved')}<span class="pill ${e.visible===false?'warn':''}">${e.visible===false?'Hidden':'Visible to customers'}</span><button class="btn btn-soft btn-sm" type="button" data-act="visibility" data-v="${e.id}">${e.visible===false?'Make visible':'Hide listing'}</button><a class="btn btn-soft btn-sm" href="#/edit-equipment/${encodeURIComponent(e.id)}">Edit information & photos</a><a class="btn btn-soft btn-sm btn-block" href="#/equipment/${e.id}">Manage equipment & availability</a></div></section>`).join('')||'<p>No listings yet. Open Equipment to add your first machine.</p>'}</div>`,"app"]; },
   "edit-equipment": (id, u) => {
@@ -1345,7 +1417,7 @@ const shell = (html, name, u) => `<div class="shell"><aside class="side"><a clas
   <div class="foot">${u ? `<div class="account-mini">${avatar(u)}<div><small class="role-kicker-dark">${roleLabel(u)}</small><b>${u.name}</b><a href="#" data-act="logout"><i class="bi bi-box-arrow-right"></i> Log out</a></div></div>` : `<a href="#/register"><b>Create account</b></a>`}</div></aside><main class="main">${serverApiChecked && !serverApiEnabled ? `<div class="server-mode-warning" role="status"><b>Local-only mode:</b> changes are saved in this browser and will not appear in other accounts. Connect Supabase (see <code>supabase-config.js</code> and README.md) to share equipment and account data.</div>` : ""}${html}</main></div>`;
 
 function render() {
-  const [, name = "", arg] = location.hash.slice(1).split("/"), u = me();
+  const [, name = "", arg, detailArg] = location.hash.slice(1).split("/"), u = me();
   const pub = ["welcome", "login", "register", "verify-email", "explore", "equipment", "owner", "member"];
   if (u && rolePending && name !== "choose-role") return go("#/choose-role");
   if (u && !rolePending && name === "choose-role") return go(homeOf(u));
@@ -1353,10 +1425,10 @@ function render() {
   if (!V[name]) return go("#/");
   if (!u && !pub.includes(name)) return go("#/login");
   const adminOnly = ["admin", "queue", "users", "commission", "user"];
-  const ownerOnly = ["dashboard", "listings", "papers", "edit-equipment"];
+  const ownerOnly = ["dashboard", "owner-commission", "listings", "papers", "edit-equipment"];
   if (u && adminOnly.includes(name) && u.role !== "admin") return go(homeOf(u));
   if (u && ownerOnly.includes(name) && u.role !== "owner") return go(homeOf(u));
-  const [html, mode] = V[name](arg, u);
+  const [html, mode] = V[name](arg, u, detailArg);
   document.body.classList.toggle("auth", mode === "auth");
   app.innerHTML = mode === "auth" ? html : shell(html, name, u);
   updateNotificationPopup(u);
@@ -1497,6 +1569,32 @@ document.addEventListener("click", async (e) => {
     paymentUrl.searchParams.set("commissionAmount", Number(record.amount).toFixed(2));
     paymentUrl.searchParams.set("bookingRef", record.bookingRef);
     window.location.assign(paymentUrl.href);
+  }
+  else if (["archivecommission", "restorecommission", "deletecommission"].includes(a)) {
+    if (!u || u.role !== "owner") return toast("Only the equipment owner can manage commission history.");
+    if (!serverApiEnabled) return toast("Commission history archiving requires the connected Supabase backend.");
+    try {
+      const archiveAction = a === "archivecommission" ? "archive"
+        : a === "restorecommission" ? "restore" : "hide";
+      const response = await fetch("/api/commission/archive", {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ itemType:el.dataset.kind, itemId:v, action:archiveAction }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) throw new Error(result.error || "Could not update commission history.");
+      applyApiState(result.state);
+      const messages = {
+        archive:"Entry archived from your regular list. The accounting record is retained.",
+        restore:"Entry restored to your commission history.",
+        hide:"Entry removed from your view. The accounting record is retained.",
+      };
+      toast(messages[archiveAction]);
+      rerender();
+    } catch (err) {
+      toast(err.message || "Could not update commission history.");
+    }
   }
   else if (a === "star") { rate.stars = +v; rerender(); }
   else if (a === "adminstar") { rate.stars = +v; rerender(); }
@@ -2086,11 +2184,11 @@ async function initAgriRenta() {
         applyApiState(result.state);
         history.replaceState({}, document.title, location.pathname + location.hash);
         toast("GCash simulation recorded. The commission balance is updated; no real money was transferred.");
-        go("#/dashboard");
+        go("#/owner-commission/records");
       } catch (err) {
         history.replaceState({}, document.title, location.pathname + location.hash);
         toast(err.message || "Could not complete the simulated commission payment.");
-        go("#/dashboard");
+        go("#/owner-commission/pay");
       }
     }
   }
