@@ -386,6 +386,7 @@ function passwordValidationError(password) {
 function ensureCommissionState(state) {
   state.commissionRecords = Array.isArray(state.commissionRecords) ? state.commissionRecords : [];
   state.commissionPayments = Array.isArray(state.commissionPayments) ? state.commissionPayments : [];
+  state.commissionArchives = Array.isArray(state.commissionArchives) ? state.commissionArchives : [];
   const settings = state.commissionSettings && typeof state.commissionSettings === "object"
     ? state.commissionSettings
     : {};
@@ -601,9 +602,11 @@ function publicState(state, user) {
     if (user?.role === "owner") {
       copy.commissionRecords = copy.commissionRecords.filter((record) => record.owner === user.email);
       copy.commissionPayments = copy.commissionPayments.filter((payment) => payment.owner === user.email);
+      copy.commissionArchives = copy.commissionArchives.filter((item) => item.owner === user.email);
     } else {
       copy.commissionRecords = [];
       copy.commissionPayments = [];
+      copy.commissionArchives = [];
       delete copy.commissionSettings;
     }
     copy.notificationReads = user && Array.isArray(copy.notificationReads[user.email])
@@ -1236,6 +1239,66 @@ async function handleCommissionDisputeReview(req) {
   return send(200, { ok: true, state: publicState(state, user) });
 }
 
+async function handleCommissionArchive(req) {
+  const user = requireUser(await currentUser(req));
+  if (user.role !== "owner") throw new HttpError(403, "Only equipment owners can archive commission history.");
+  const body = await req.json().catch(() => ({}));
+  const itemType = String(body?.itemType || "");
+  const itemId = String(body?.itemId || "");
+  const action = typeof body?.action === "string"
+    ? body.action
+    : typeof body?.archive === "boolean" ? (body.archive ? "archive" : "restore") : "";
+  if (!["record", "payment", "booking"].includes(itemType) || !itemId || itemId.length > 200
+    || !["archive", "restore", "hide"].includes(action)) {
+    throw new HttpError(400, "Choose a valid rental, commission record, or payment history entry.");
+  }
+
+  const state = await updateState((current) => {
+    syncCommissionRecords(current);
+    const items = itemType === "record" ? current.commissionRecords
+      : itemType === "payment" ? current.commissionPayments : current.bookings;
+    const ownerItem = items.find((entry) =>
+      String(itemType === "booking" ? entry.ref : entry.id) === itemId && entry.owner === user.email
+    );
+    if (!ownerItem) throw new HttpError(404, "That rental or commission history entry was not found for this account.");
+
+    const archiveIndex = current.commissionArchives.findIndex((entry) =>
+      entry.owner === user.email && entry.itemType === itemType && String(entry.itemId) === itemId
+    );
+    if (action === "archive") {
+      if (itemType === "record") {
+        const resolved = ownerItem.status === "waived"
+          || (ownerItem.status !== "disputed" && remainingCommissionCents(ownerItem) === 0);
+        if (!resolved) throw new HttpError(409, "Only settled or waived commission records can be archived.");
+      } else if (itemType === "payment" && !["simulated", "verified", "rejected"].includes(ownerItem.status)) {
+        throw new HttpError(409, "Pending or unresolved commission payments cannot be archived.");
+      } else if (itemType === "booking" && ownerItem.status !== "returned") {
+        throw new HttpError(409, "Only returned rentals can be archived.");
+      }
+      if (archiveIndex < 0) {
+        current.commissionArchives.push({
+          owner: user.email,
+          itemType,
+          itemId,
+          archivedAt: new Date().toISOString(),
+        });
+      }
+    } else if (action === "restore") {
+      if (archiveIndex < 0) throw new HttpError(404, "That entry is not archived.");
+      if (current.commissionArchives[archiveIndex].hiddenFromOwner === true) {
+        throw new HttpError(409, "An entry deleted from your view cannot be restored.");
+      }
+      current.commissionArchives.splice(archiveIndex, 1);
+    } else {
+      if (archiveIndex < 0) throw new HttpError(409, "Archive this entry before removing it from your view.");
+      current.commissionArchives[archiveIndex].hiddenFromOwner = true;
+      current.commissionArchives[archiveIndex].hiddenAt = new Date().toISOString();
+    }
+    return current;
+  });
+  return send(200, { ok: true, state: publicState(state, user) });
+}
+
 async function handleCommissionSettings(req) {
   const user = requireAdminUser(await currentUser(req));
   const body = await req.json().catch(() => ({}));
@@ -1287,6 +1350,7 @@ async function handleProfile(req) {
     for (const item of state.withdrawals || []) if (item.owner === oldEmail) item.owner = newEmail;
     for (const item of state.commissionRecords || []) if (item.owner === oldEmail) item.owner = newEmail;
     for (const item of state.commissionPayments || []) if (item.owner === oldEmail) item.owner = newEmail;
+    for (const item of state.commissionArchives || []) if (item.owner === oldEmail) item.owner = newEmail;
     for (const message of state.messages || []) {
       if (message.author === oldEmail) message.author = newEmail;
       if (message.from === oldEmail) message.from = newEmail;
@@ -1363,6 +1427,7 @@ const ROUTES = {
   "POST /payment/gcash-demo-complete": handleGcashDemo,
   "POST /commission/payment": handleCommissionPayment,
   "POST /commission/demo-payment": handleCommissionDemoPayment,
+  "POST /commission/archive": handleCommissionArchive,
   "POST /commission/payment-review": handleCommissionPaymentReview,
   "POST /commission/dispute": handleCommissionDispute,
   "POST /commission/dispute-review": handleCommissionDisputeReview,
