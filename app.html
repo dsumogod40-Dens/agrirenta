@@ -18,6 +18,23 @@
   <div class="bg-shade"></div>
 
   <div id="app"></div>
+  <section id="notificationToast" class="notification-toast" role="status" aria-live="polite" hidden>
+    <span class="notification-toast-icon" aria-hidden="true"><i class="bi bi-bell-fill"></i></span>
+    <div class="notification-toast-copy">
+      <b id="notificationToastTitle"></b>
+      <p id="notificationToastDescription"></p>
+      <button type="button" class="notification-toast-open" data-act="opennotification">View details</button>
+    </div>
+    <button type="button" class="notification-toast-close" data-act="closenotification" aria-label="Dismiss notification"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  </section>
+  <dialog id="gcashDemoNotice" class="gcash-demo-dialog" aria-labelledby="gcashDemoNoticeTitle">
+    <span class="notification-toast-icon" aria-hidden="true"><i class="bi bi-info-circle-fill"></i></span>
+    <div class="notification-toast-copy">
+      <b id="gcashDemoNoticeTitle">GCash payment notice</b>
+      <p>This GCash checkout is a simulation only. No real money will be transferred.</p>
+    </div>
+    <button type="button" class="notification-toast-close" data-act="closegcashnotice" aria-label="Close payment notice"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  </dialog>
   <div id="toast" role="status"></div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
