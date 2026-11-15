@@ -521,10 +521,7 @@ function isOwnerCompletionReminderDue(booking, now = Date.now()) {
 }
 
 function isOwnerBookingRestricted(state, owner) {
-  return isOwnerCommissionRestricted(state, owner)
-    || (state.bookings || []).some((booking) =>
-      booking.owner === owner && isOwnerCompletionOverdue(booking)
-    );
+  return isOwnerCommissionRestricted(state, owner);
 }
 
 function commissionStateNeedsSync(state) {
@@ -799,7 +796,7 @@ function memberStateError(current, incoming, user) {
         || !Number.isInteger(days) || days < 1 || !Number.isFinite(Number(booking.total))
         || Number(booking.total) !== Number(equipment.price) * days) return "Booking details are invalid.";
       if (isOwnerBookingRestricted(current, equipment.owner)) {
-        return "This owner is temporarily unable to accept new booking requests because of overdue commission or an unconfirmed completed rental.";
+        return "This owner is temporarily unable to accept new booking requests because of overdue commission.";
       }
       const overlap = bookings.some((old) => Number(old.eq) === Number(booking.eq)
         && ["pending", "approved"].includes(old.status) && booking.start < old.end && booking.end > old.start);
