@@ -639,17 +639,13 @@ const ownerCompletionReminderDue = (booking) => booking.status === "returned"
   ? isOwnerCompletionPending(booking)
   : booking.status === "approved" && Number.isFinite(bookingEndTimestamp(booking))
     && Date.now() >= bookingEndTimestamp(booking);
-const ownerBookingRestricted = (owner) => ownerCommissionRestricted(owner)
-  || db.bookings.some((booking) => booking.owner === owner && ownerCompletionOverdue(booking));
+const ownerBookingRestricted = (owner) => ownerCommissionRestricted(owner);
 const equipmentBookingRestricted = (equipment) => !!equipment.bookingRestricted
   || !!equipment.commissionRestricted
   || ownerBookingRestricted(equipment.owner);
 const equipmentRestrictionMessage = (equipment) => {
   if (equipment.commissionRestricted || ownerCommissionRestricted(equipment.owner)) {
     return "New bookings are paused while the owner settles overdue commission.";
-  }
-  if (db.bookings.some((booking) => booking.owner === equipment.owner && ownerCompletionOverdue(booking))) {
-    return "New bookings are paused while the owner completes an overdue rental confirmation.";
   }
   return "New bookings are temporarily paused for this listing.";
 };
@@ -962,7 +958,7 @@ const V = {
     return [`<a href="${backHref}">← Back</a><div class="grid equipment-detail-layout" style="grid-template-columns:repeat(auto-fit,minmax(min(100%,300px),1fr))"><div><img class="hero-img neu" src="${img(e.img)}" alt="${e.name}"></div>
     <div><button class="pill status-button ${todayUnavailable?'warn':''}" type="button" disabled>${todayUnavailable?'Unavailable / booked':'Available'} ${todayUnavailable?'×':'✓'}</button> ${badge(o)}<h1>${e.name} · ${e.spec}</h1><p>Reliable power for everyday field work. Suitable for plowing, hauling and general farm operations.</p>
     <p class="equipment-location"><i class="bi bi-geo-alt-fill"></i> ${locationText(e)}</p><div class="row"><b class="price" style="font-size:2rem">${peso(e.price)} / day</b><span>${stars(e.rating)} <b>${e.rating}</b> (${e.n})</span></div>
-    ${own ? `<section class="neu owner-edit-panel"><h3>Customer visibility</h3><p>${e.visible === false ? "Hidden from customers." : "Visible to customers after approval."}</p><button class="btn btn-soft" type="button" data-act="visibility" data-v="${e.id}">${e.visible === false ? "Make visible to customers" : "Hide from customers"}</button><h3 style="margin-top:1rem">Listing location</h3><form data-form="updatelocation" class="stack"><input type="hidden" name="eq" value="${e.id}"><label>Location</label><input name="location" list="bunawanLocations" value="${e.location||''}" placeholder="Type your equipment location" required><datalist id="bunawanLocations">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><button class="btn btn-primary">Save location</button></form><h3>Equipment availability</h3><p class="muted">Tap a future date to mark it unavailable or available. Booked dates cannot be changed here.</p><div class="owner-calendar">${calendarDays(e.id,30,false)}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : `<div class="neu" style="margin:1.2rem 0"><small>Provided by</small><a class="owner-profile-card" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(o)}<span><b>${escapeHtml(o.name)}</b><small>${r ? r.v.toFixed(1) + " · " + r.n + " reviews" : "New owner"} · ${isVerified(o) ? "ID verified" : "Verification pending"}</small></span></a></div>${isAdmin ? `<p class="muted">Administrator listing view · Status: ${escapeHtml(e.status || "approved")} · ${e.visible === false ? "Hidden from customers" : "Visible to customers"}</p>` : `<div class="equipment-actions">${equipmentCommissionRestricted(e) ? `<p class="commission-restricted-note">New bookings are paused because this owner has overdue commission or an unconfirmed completed rental.</p>` : `<a class="btn btn-primary" href="#/book/${e.id}">Book Now</a>`}<a class="floating-message" href="#/messages/${encodeURIComponent(e.owner)}" aria-label="Message equipment owner" title="Message equipment owner"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i></a></div>`}`}</div></div>
+    ${own ? `<section class="neu owner-edit-panel"><h3>Customer visibility</h3><p>${e.visible === false ? "Hidden from customers." : "Visible to customers after approval."}</p><button class="btn btn-soft" type="button" data-act="visibility" data-v="${e.id}">${e.visible === false ? "Make visible to customers" : "Hide from customers"}</button><h3 style="margin-top:1rem">Listing location</h3><form data-form="updatelocation" class="stack"><input type="hidden" name="eq" value="${e.id}"><label>Location</label><input name="location" list="bunawanLocations" value="${e.location||''}" placeholder="Type your equipment location" required><datalist id="bunawanLocations">${LOCATIONS.map(l=>`<option value="${l}"></option>`).join('')}</datalist><button class="btn btn-primary">Save location</button></form><h3>Equipment availability</h3><p class="muted">Tap a future date to mark it unavailable or available. Booked dates cannot be changed here.</p><div class="owner-calendar">${calendarDays(e.id,30,false)}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : `<div class="neu" style="margin:1.2rem 0"><small>Provided by</small><a class="owner-profile-card" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(o)}<span><b>${escapeHtml(o.name)}</b><small>${r ? r.v.toFixed(1) + " · " + r.n + " reviews" : "New owner"} · ${isVerified(o) ? "ID verified" : "Verification pending"}</small></span></a></div>${isAdmin ? `<p class="muted">Administrator listing view · Status: ${escapeHtml(e.status || "approved")} · ${e.visible === false ? "Hidden from customers" : "Visible to customers"}</p>` : `<div class="equipment-actions">${equipmentCommissionRestricted(e) ? `<p class="commission-restricted-note">New bookings are paused because this owner has overdue commission.</p>` : `<a class="btn btn-primary" href="#/book/${e.id}">Book Now</a>`}<a class="floating-message" href="#/messages/${encodeURIComponent(e.owner)}" aria-label="Message equipment owner" title="Message equipment owner"><i class="bi bi-chat-dots-fill" aria-hidden="true"></i></a></div>`}`}</div></div>
     ${!own ? `<section class="neu availability-panel"><div class="row"><h3>Equipment availability</h3><span class="pill">Next 14 days</span></div><p class="muted">Choose dates that are not blocked by the owner or reserved by another customer.</p><div class="availability-days">${Array.from({length:14},(_,i)=>{const dt=new Date();dt.setHours(12,0,0,0);dt.setDate(dt.getDate()+i);const day=dateKey(dt);const unavailable=dayStatus(e.id,day);return `<span class="availability-day ${unavailable?'unavailable':'available'}"><b>${dt.toLocaleDateString('en-US',{weekday:'short'})}</b><strong>${dt.getDate()}</strong><small>${unavailable?'Unavailable / booked':'Available'}</small></span>`}).join('')}</div><div class="availability-legend"><span><i class="available-dot"></i> Available</span><span><i class="unavailable-dot"></i> Unavailable / booked</span></div></section>` : ''}`, "app"]; },
 
   book: (id, u) => { const e = E(id); if (!e || (e.status && e.status !== "approved") || e.visible === false) return V.explore(); if (equipmentCommissionRestricted(e)) return [`<a href="#/equipment/${id}">← Back to equipment</a><section class="neu"><h1>Booking requests paused</h1><p>This owner is temporarily unable to accept new booking requests. Existing rentals and messages remain available.</p></section>`, "app"]; draft = draft && draft.eq == id ? draft : { eq: id, start: "", end: "", delivery: "Delivery", addr: "", pay: "Cash on Delivery (COD)" };
@@ -1255,14 +1251,14 @@ function notificationRecords(u) {
         const paymentUnconfirmed = booking.status === "returned" && booking.paymentStatus !== "paid"
           && !(booking.pay === "GCash" && booking.paymentStatus === "demo_completed");
         const paymentReminder = booking.pay === "Cash on Delivery (COD)"
-          ? `Confirm COD payment for ${booking.ref}. New bookings will pause if it remains unconfirmed for 24 hours.`
-          : `Ask the renter to complete the GCash demo checkout for ${booking.ref}. New bookings will pause if it remains unconfirmed for 24 hours.`;
+          ? `Confirm COD payment for ${booking.ref}. Administrator will be notified if it remains unconfirmed for 24 hours.`
+          : `Ask the renter to complete the GCash demo checkout for ${booking.ref}. Administrator will be notified if it remains unconfirmed for 24 hours.`;
         rows.push({
           id:`completion:${booking.ref}:${overdue ? "overdue" : "reminder"}`,
           tab:"dashboard",
           title:overdue ? "Rental confirmation overdue" : paymentUnconfirmed ? "Confirm rental payment" : "Mark rental returned",
           description:overdue
-            ? `Administrator has been notified. New bookings are paused until ${booking.ref} is confirmed.`
+            ? `Administrator has been notified. Please confirm ${booking.ref}.`
             : paymentUnconfirmed
               ? paymentReminder
               : `The end date for ${booking.ref} has passed. Mark it returned and confirm any COD payment within 24 hours.`,
@@ -1299,7 +1295,7 @@ function notificationRecords(u) {
     }
     for (const booking of db.bookings.filter(ownerCompletionOverdue)) {
       rows.push({ id:`completion-review:${booking.ref}`, tab:"admin", title:"Rental completion needs review",
-        description:`${usr(booking.owner).name} has not confirmed ${booking.ref}; new bookings are paused.`,
+        description:`${usr(booking.owner).name} has not confirmed ${booking.ref}. Please contact the owner.`,
         href:`#/messages/${encodeURIComponent(booking.owner)}`, time:booking.statusUpdatedAt || booking.end });
     }
     for (const withdrawal of db.withdrawals.filter(item => item.status === "pending")) {
