@@ -81,7 +81,6 @@ a {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  background: linear-gradient(180deg, #3a7a2e, var(--forest));
 }
 
 /* Background slideshow */
