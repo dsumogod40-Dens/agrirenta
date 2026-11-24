@@ -209,6 +209,41 @@
       return callFunction("POST", "/password", body);
     },
 
+    "POST /api/forgot-password": async (body) => {
+      const email = String(body.email || "").trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return reply(400, { ok: false, error: "Enter a valid email address." });
+      }
+      const { error } = await sb.auth.resetPasswordForEmail(email);
+      if (error) {
+        const limited = /rate|too many/i.test(error.message || "");
+        return reply(limited ? 429 : 400, {
+          ok: false,
+          error: limited ? "Too many password reset requests. Please wait before trying again." : error.message,
+        });
+      }
+      return reply(200, { ok: true });
+    },
+
+    "POST /api/reset-password": async (body) => {
+      const email = String(body.email || "").trim().toLowerCase();
+      const token = String(body.token || "").trim();
+      const newPassword = String(body.newPassword || "");
+      const passwordError = passwordValidationError(newPassword);
+      if (passwordError) return reply(400, { ok: false, error: passwordError });
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || !/^\d{6,8}$/.test(token)) {
+        return reply(400, { ok: false, error: "Enter the 6-digit reset code sent to your email." });
+      }
+      const { data, error:verifyError } = await sb.auth.verifyOtp({ email, token, type:"recovery" });
+      if (verifyError || !data?.session) {
+        return reply(400, { ok: false, error:verifyError?.message || "That reset code is invalid or expired." });
+      }
+      const { error } = await sb.auth.updateUser({ password:newPassword });
+      if (error) return reply(400, { ok: false, error: error.message || "Could not reset your password." });
+      await sb.auth.refreshSession().catch(() => {});
+      return reply(200, { ok: true });
+    },
+
     "POST /api/logout": async () => {
       await sb.auth.signOut({ scope: "local" }).catch(() => {});
       privateUrlCache.clear();
