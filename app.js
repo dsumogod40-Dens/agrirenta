@@ -900,7 +900,7 @@ const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
 
-  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">Log in to continue your farming journey.</p>
+  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">Log in to continue your farming journey..</p>
     <form data-form="login"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
     ${passwordField("loginPassword", "pw", "Password", "current-password", "Enter your password")}
     <p style="text-align:right;margin:.5rem 0 0"><a href="#" data-act="forgot"><b>Forgot password?</b></a></p>
@@ -908,6 +908,21 @@ const V = {
     <p style="text-align:center;margin:.8rem 0 0">or continue with</p>
     <button class="btn btn-soft btn-block google-login" data-act="google"><img src="images/google.jpg" alt="">Continue with Google</button>
     <a class="link" href="#/register">New to AgriRenta? Create an account</a>`),
+
+  forgot: () => authCard(`<h1 style="text-align:center;">Forgot password</h1><p style="text-align:center;">Enter your registered email address to receive a password reset link.</p>
+    <form data-form="forgot" class="stack"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required><button class="btn btn-primary btn-block">Send reset link</button></form>
+    <a class="link" href="#/login">Back to log in</a>`),
+
+  "reset-password": (email) => authCard(`<h1 style="text-align:center;">Reset password</h1><p style="text-align:center;">Enter the 6-digit code sent to <b>${escapeHtml(decodeURIComponent(email || ""))}</b>, then create a new password.</p>
+    <form data-form="reset-password" class="stack">
+      <input type="hidden" name="email" value="${escapeHtml(decodeURIComponent(email || ""))}">
+      <label>6-digit reset code</label><input name="token" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="8" pattern="[0-9]{6,8}" placeholder="Enter reset code" required>
+      ${passwordField("resetPassword", "newPassword", "New password", "new-password", "Create a strong password")}
+      <small class="password-guidance">Use 8+ characters with uppercase and lowercase letters, a number, and a special character.</small>
+      ${passwordField("resetPasswordConfirm", "confirmPassword", "Confirm password", "new-password", "Re-enter your password")}
+      <button class="btn btn-primary btn-block">Update password</button>
+    </form>
+    <a class="link" href="#/login">Back to log in</a>`),
 
   register: () => authCard(`<h1 style="text-align:center;">Create account</h1><p style="text-align:center;">Pick how you will use AgriRenta.</p>
     <div class="chips"><button class="chip ${regRole === "customer" ? "on" : ""}" data-act="role" data-v="customer">Customer</button><button class="chip ${regRole === "owner" ? "on" : ""}" data-act="role" data-v="owner">Equipment owner</button></div>
@@ -1419,7 +1434,7 @@ const shell = (html, name, u) => `<div class="shell"><aside class="side"><a clas
 
 function render() {
   const [, name = "", arg, detailArg] = location.hash.slice(1).split("/"), u = me();
-  const pub = ["welcome", "login", "register", "verify-email", "explore", "equipment", "owner", "member"];
+  const pub = ["welcome", "login", "register", "forgot", "reset-password", "verify-email", "explore", "equipment", "owner", "member"];
   if (u && rolePending && name !== "choose-role") return go("#/choose-role");
   if (u && !rolePending && name === "choose-role") return go(homeOf(u));
   if (!name) return go(u ? homeOf(u) : "#/welcome");
@@ -1516,7 +1531,7 @@ document.addEventListener("click", async (e) => {
   }
   else if (a === "marknotification") { if (!u) return; const id = decodeURIComponent(v || ""); db.notificationReads[u.email] = [...new Set([...(db.notificationReads[u.email] || []), id])]; await save(); rerender(); }
   else if (a === "google") { if (window.agrirentaGoogleLogin) window.agrirentaGoogleLogin().catch(() => toast("Could not start Google sign-in. Please try again.")); else toast("Google sign-in needs Supabase to be connected (see supabase-config.js)."); }
-  else if (a === "forgot") toast("Password reset email will be sent through Supabase (next step).");
+  else if (a === "forgot") go("#/forgot");
   else if (a === "resend-email") {
     if (!serverApiEnabled) return toast("Email codes require a connected Supabase project.");
     try {
@@ -1679,7 +1694,41 @@ document.addEventListener("submit", async (e) => {
   const f = e.target.closest("form[data-form]"); if (!f) return; e.preventDefault();
   const d = Object.fromEntries(new FormData(f)), k = f.dataset.form, u = me();
   if (e.submitter?.name) d[e.submitter.name] = e.submitter.value;
-  if (k === "login") {
+  if (k === "forgot") {
+    try {
+      const response = await fetch("/api/forgot-password", {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:d.email }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) return toast(result.error || "Could not send the password reset email.");
+      toast("A 6-digit reset code was sent to your email.");
+      go("#/reset-password/" + encodeURIComponent(d.email.trim().toLowerCase()));
+    } catch (err) {
+      toast("Could not reach Supabase.");
+    }
+  } else if (k === "reset-password") {
+    const passwordError = passwordValidationError(String(d.newPassword || ""));
+    if (passwordError) return toast(passwordError);
+    if (d.newPassword !== d.confirmPassword) return toast("Passwords do not match.");
+    try {
+      const response = await fetch("/api/reset-password", {
+        method:"POST",
+        credentials:"same-origin",
+        headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ email:d.email, token:d.token, newPassword:d.newPassword }),
+      });
+      const result = await response.json();
+      if (!response.ok || !result.ok) return toast(result.error || "Could not reset your password.");
+      toast("Password updated. You can now log in with your email and password.");
+      await fetch("/api/logout", { method:"POST", credentials:"same-origin" }).catch(() => {});
+      go("#/login");
+    } catch (err) {
+      toast("Could not reach Supabase.");
+    }
+  } else if (k === "login") {
     const x = db.users.find((y) => y.email === d.email.trim().toLowerCase());
     if (serverApiEnabled) {
       try {
