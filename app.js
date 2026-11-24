@@ -909,8 +909,8 @@ const V = {
     <button class="btn btn-soft btn-block google-login" data-act="google"><img src="images/google.jpg" alt="">Continue with Google</button>
     <a class="link" href="#/register">New to AgriRenta? Create an account</a>`),
 
-  forgot: () => authCard(`<h1 style="text-align:center;">Forgot password</h1><p style="text-align:center;">Enter your registered email address to receive a password reset link.</p>
-    <form data-form="forgot" class="stack"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required><button class="btn btn-primary btn-block">Send reset link</button></form>
+  forgot: () => authCard(`<h1 style="text-align:center;">Forgot password</h1><p style="text-align:center;">Enter your registered email address to receive a 6-digit reset code.</p>
+    <form data-form="forgot" class="stack"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required><button class="btn btn-primary btn-block">Send reset code</button></form>
     <a class="link" href="#/login">Back to log in</a>`),
 
   "reset-password": (email) => authCard(`<h1 style="text-align:center;">Reset password</h1><p style="text-align:center;">Enter the 6-digit code sent to <b>${escapeHtml(decodeURIComponent(email || ""))}</b>, then create a new password.</p>
