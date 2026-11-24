@@ -567,23 +567,45 @@ const readPendingState = () => {
 let serverApiEnabled = false;
 let serverApiChecked = false;
 let rolePending = false; // true right after a first Google sign-in, until the person picks Customer or Equipment owner
+let pendingPersistTimer = null;
+let pendingPersistPromise = null;
+let pendingPersistResolve = null;
+let pendingPersistReject = null;
 const persistState = async () => {
   const snapshot = JSON.stringify(db);
   try { localStorage.setItem("agri", snapshot); }
   catch (err) { console.warn("AgriRenta local cache could not be saved", err); }
   if (!serverApiEnabled || !db.me) return;
-  try {
-    const response = await fetch("/api/state", { method:"PUT", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({state:db}) });
-    let result = {};
-    try { result = await response.json(); } catch {}
-    if (!response.ok || !result.ok) throw new Error(result.error || (response.status === 413 ? "This upload is too large for the server. Please use smaller photos." : "AgriRenta server save failed."));
-    try { localStorage.removeItem("agri_pending_sync"); }
-    catch (cacheError) { console.warn("AgriRenta pending server copy could not be cleared.", cacheError); }
-  } catch (err) {
-    try { localStorage.setItem("agri_pending_sync", snapshot); }
-    catch (cacheError) { console.warn("AgriRenta pending server copy could not be saved.", cacheError); }
-    throw err;
+  clearTimeout(pendingPersistTimer);
+  if (!pendingPersistPromise) {
+    pendingPersistPromise = new Promise((resolve, reject) => {
+      pendingPersistResolve = resolve;
+      pendingPersistReject = reject;
+    });
   }
+  const promise = pendingPersistPromise;
+  pendingPersistTimer = setTimeout(async () => {
+    const resolve = pendingPersistResolve;
+    const reject = pendingPersistReject;
+    pendingPersistPromise = null;
+    pendingPersistResolve = null;
+    pendingPersistReject = null;
+    try {
+      const currentSnapshot = JSON.stringify(db);
+      const response = await fetch("/api/state", { method:"PUT", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:currentSnapshot ? JSON.stringify({state:JSON.parse(currentSnapshot)}) : "{}" });
+      let result = {};
+      try { result = await response.json(); } catch {}
+      if (!response.ok || !result.ok) throw new Error(result.error || (response.status === 413 ? "This upload is too large for the server. Please use smaller photos." : "AgriRenta server save failed."));
+      try { localStorage.removeItem("agri_pending_sync"); }
+      catch (cacheError) { console.warn("AgriRenta pending server copy could not be cleared.", cacheError); }
+      resolve(true);
+    } catch (err) {
+      try { localStorage.setItem("agri_pending_sync", JSON.stringify(db)); }
+      catch (cacheError) { console.warn("AgriRenta pending server copy could not be saved.", cacheError); }
+      reject(err);
+    }
+  }, 350);
+  return promise;
 };
 const save = () => persistState().then(() => true).catch(err => {
   console.error("AgriRenta server save failed; local cache remains available.", err);
@@ -772,7 +794,7 @@ let regRole = "customer", cat = "All types", q = "", idType = "PhilSys ID", draf
 const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.png" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
 const passwordField = (id, name, label, autocomplete, placeholder="") => `<label for="${id}">${label}</label><div class="password-field"><input id="${id}" name="${name}" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" required><button type="button" class="password-toggle" data-password-toggle data-target="${id}" data-field-label="${label.toLowerCase()}" aria-label="Show ${label.toLowerCase()}" aria-pressed="false" title="Show ${label.toLowerCase()}"><i class="bi bi-eye" aria-hidden="true"></i></button></div>`;
 const isFav = (e, email = db.me) => !!(email && (db.favorites[email] || []).map(String).includes(String(e)));
-const eqCard = (e) => `<article class="neu card equipment-card"><a class="equipment-open" href="#/equipment/${e.id}"><img src="${img(e.img)}" alt="${e.name}"><h3>${e.name}</h3><p>${e.spec}</p></a>
+const eqCard = (e) => `<article class="neu card equipment-card"><a class="equipment-open" href="#/equipment/${e.id}"><img src="${img(e.img)}" alt="${e.name}" loading="lazy" decoding="async"><h3>${e.name}</h3><p>${e.spec}</p></a>
   ${equipmentCommissionRestricted(e) ? `<p class="commission-restricted-note">${equipmentRestrictionMessage(e)}</p>` : ""}
   <p class="equipment-location"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i> ${locationText(e)}</p>
   <div class="row"><span>${stars(e.rating)} <b>${e.rating}</b> <small>(${e.n})</small></span><button class="icon-btn ${isFav(e.id) ? "favorite-on" : ""}" type="button" aria-label="${isFav(e.id) ? "Remove from" : "Add to"} favorites" data-act="favorite" data-v="${e.id}"><i class="bi ${isFav(e.id) ? "bi-heart-fill" : "bi-heart"}" aria-hidden="true"></i></button></div><div class="row"><b class="price">${peso(e.price)} / day</b><i class="dot"></i></div><a class="equipment-owner-link" href="#/owner/${encodeURIComponent(e.owner)}">${avatar(usr(e.owner))}<span>Provided by <b>${escapeHtml(usr(e.owner).name)}</b></span></a></article>`;
@@ -1021,7 +1043,7 @@ const V = {
     return [`<header class="hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">${roleLabel(u)}</small><h1>${hi}, ${u.name.split(" ")[0]}</h1><p>Ready to get work done?</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <input id="q" class="searchbar" placeholder="Search equipment or location..." value="${q}" onkeydown="if(event.key==='Enter'){q=this.value.trim();cat='All types';go('#/explore')}">
     <h2 style="margin-top:1.4rem">Browse categories</h2><div class="category-grid">${["Tractors", "Harvesters", "Tillers"].map((c) => `<a class="category-card" href="#/explore" data-act="cat" data-v="${c}"><img src="${categoryImage[c]}" alt="${c}"><span>${c}</span></a>`).join("")}<a class="category-card category-more" href="#/explore" data-act="cat" data-v="All types"><span class="category-more-icon"><i class="bi bi-three-dots" aria-hidden="true"></i></span><span>See More</span></a></div>
-    <div class="sec-head"><h2>Featured equipment</h2><a href="#/explore">See all</a></div><a href="#/equipment/${f.id}" class="promo"><video autoplay muted loop playsinline preload="metadata" poster="images/banner.png" aria-label="Featured farm equipment banner"><source src="bannercustomer.mp4" type="video/mp4"></video></a>
+    <div class="sec-head"><h2>Featured equipment</h2><a href="#/explore">See all</a></div><a href="#/equipment/${f.id}" class="promo"><video autoplay muted loop playsinline preload="none" poster="images/banner.png" aria-label="Featured farm equipment banner"><source src="bannercustomer.mp4" type="video/mp4"></video></a>
     ${isVerified(u) ? "" : `<a href="#/verification" class="neu item card" style="margin-top:1.4rem;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff"><div><small style="color:#d6efdf">COMPLETE YOUR PROFILE</small><h3>Verify your ID to book faster</h3><div class="bar"><i style="width:${steps * 25}%"></i></div><small style="color:#d6efdf">${steps} of 4 steps</small></div></a>`}
     <div class="sec-head"><h2>All equipment</h2><a href="#/explore">Explore all</a></div><div class="grid" id="homeEquipmentList">${filteredAvailableEquipment(q).map(eqCard).join("") || "<p>No equipment matches your search. Try another name, type, or location.</p>"}</div>`, "app"]; },
 
@@ -1447,6 +1469,10 @@ function render() {
   const [html, mode] = V[name](arg, u, detailArg);
   document.body.classList.toggle("auth", mode === "auth");
   app.innerHTML = mode === "auth" ? html : shell(html, name, u);
+  app.querySelectorAll("img").forEach((image) => {
+    if (!image.hasAttribute("loading")) image.loading = "lazy";
+    if (!image.hasAttribute("decoding")) image.decoding = "async";
+  });
   updateNotificationPopup(u);
   if (mode === "app") loadPrivateAssets(app).catch((error) => {
     console.error("Could not resolve private AgriRenta document links.", error);
@@ -2147,7 +2173,6 @@ async function initAgriRenta() {
     app.textContent = "AgriRenta could not securely migrate saved passwords in this browser. Please connect to Supabase or contact support before continuing.";
     return;
   }
-  render();
   try {
     const response = await fetch("/api/state", { credentials:"same-origin", headers:{"Accept":"application/json"} });
     if (response.ok) {
