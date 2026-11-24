@@ -900,7 +900,15 @@ const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
 
-  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">Log in to continue your farming journey.</p>
+  login: () => authCard(`<h1 style="text-align:center;">Welcome</h1><p style="text-align:center;">AGRIRENTA SYSTEM UNDER MAINTENANCE
+
+Please be informed that the AgriRenta System is currently under maintenance. Some features may be temporarily unavailable.
+
+We apologize for the inconvenience and thank you for your patience and understanding.
+
+Programmer: Dennis Sumogod
+
+Thank you!.</p>
     <form data-form="login"><label>Email address</label><input name="email" type="email" placeholder="you@example.com" required>
     ${passwordField("loginPassword", "pw", "Password", "current-password", "Enter your password")}
     <p style="text-align:right;margin:.5rem 0 0"><a href="#" data-act="forgot"><b>Forgot password?</b></a></p>
