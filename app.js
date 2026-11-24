@@ -935,7 +935,12 @@ Thank you!.</p>
   "choose-role": () => authCard(`<h1 style="text-align:center;">Welcome to AgriRenta</h1><p style="text-align:center;">Pick how you will use AgriRenta.</p>
     <div class="chips"><button class="chip ${regRole === "customer" ? "on" : ""}" data-act="role" data-v="customer">Customer</button><button class="chip ${regRole === "owner" ? "on" : ""}" data-act="role" data-v="owner">Equipment owner</button></div>
     <small>Administrators join by invitation only.</small>
-    <button class="btn btn-primary btn-block" data-act="setrole">Continue</button>`),
+    <form data-form="google-role" class="stack">
+      ${passwordField("googlePassword", "password", "Create password", "new-password", "Create a strong password")}
+      <small class="password-guidance">Use 8+ characters with uppercase and lowercase letters, a number, and a special character.</small>
+      ${passwordField("googlePasswordConfirm", "confirmPassword", "Confirm password", "new-password", "Re-enter your password")}
+      <button class="btn btn-primary btn-block">Continue</button>
+    </form>`),
 
   "verify-email": (email) => {
     const address = decodeURIComponent(email || "");
@@ -2109,12 +2114,13 @@ async function initAgriRenta() {
       if (result && result.ok) {
         serverApiEnabled = true;
         let serverState = result.state;
-        rolePending = !!(serverState && serverState.rolePending);
+        rolePending = !!(result.rolePending || (serverState && serverState.rolePending));
         if (!serverState || typeof serverState !== "object") {
           const seeded = await fetch("/api/bootstrap", { method:"POST", credentials:"same-origin", headers:{"Content-Type":"application/json"}, body:JSON.stringify({state:db}) });
           const initial = await seeded.json();
           if (!seeded.ok || !initial.ok || !initial.state) throw new Error(initial.error || "Could not initialize the database.");
           serverState = initial.state;
+          rolePending = !!(initial.rolePending || serverState.rolePending);
         }
         const pending = serverState.me ? readPendingState() : null;
         if (pending?.me === serverState.me) {
