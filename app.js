@@ -3,7 +3,7 @@
 
 /* ---------- Data ---------- */
 const IMG = {
-  tractor: "images/Agricultural Machinery .png", harvester: "images/harves.webp", tiller: "images/Tiller Neon .png",
+  tractor: "images/Agricultural Machinery .png", harvester: "images/harves.png", tiller: "images/Tiller Neon .png",
   rotary: "images/Rotary Tiller .png", pump: "images/Water Pump .png", thresher: "images/Thresher .png",
   sprayer: "images/Neon Green Agricultural Sprayer Showcase.png"
 };
@@ -875,7 +875,7 @@ const badge = (u) => (isVerified(u) ? `<span class="pill">✓ ID verified</span>
 let regRole = "customer", cat = "All types", q = "", idType = "PhilSys ID", draft = null, rate = { stars: 4, tags: [] }, maxPrice = "", sortBy = "recommended", draftUnavailableDates = [];
 
 /* ---------- Views: each returns [html, "auth" | "app"] ---------- */
-const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.webp" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
+const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.png" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
 const passwordField = (id, name, label, autocomplete, placeholder="") => `<label for="${id}">${label}</label><div class="password-field"><input id="${id}" name="${name}" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" required><button type="button" class="password-toggle" data-password-toggle data-target="${id}" data-field-label="${label.toLowerCase()}" aria-label="Show ${label.toLowerCase()}" aria-pressed="false" title="Show ${label.toLowerCase()}"><i class="bi bi-eye" aria-hidden="true"></i></button></div>`;
 const isFav = (e, email = db.me) => !!(email && (db.favorites[email] || []).map(String).includes(String(e)));
 const eqCard = (e) => `<article class="neu card equipment-card"><a class="equipment-open" href="#/equipment/${e.id}"><img src="${img(e.img)}" alt="${e.name}" loading="lazy" decoding="async"><h3>${e.name}</h3><p>${e.spec}</p></a>
@@ -1178,7 +1178,7 @@ const V = {
 
   home: (a, u) => { const f = db.eq.find(e=>(!e.status||e.status==="approved") && e.visible !== false) || db.eq[0], steps = [!!u.phone && u.v.mobile, u.v.email, u.v.id === "ok", u.v.selfie === "ok"].filter(Boolean).length;
     const hr = new Date().getHours(), hi = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-    return [`<header class="hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">${roleLabel(u)}</small><h1>${hi}, ${u.name.split(" ")[0]}</h1><p>Ready to get work done?</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
+    return [`<header class="hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">${roleLabel(u)}</small><h1>${hi}, ${u.name.split(" ")[0]}</h1><p>Ready to get work done?</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <input id="q" class="searchbar" placeholder="Search equipment or location..." value="${q}" onkeydown="if(event.key==='Enter'){q=this.value.trim();cat='All types';go('#/explore')}">
     <h2 style="margin-top:1.4rem">Browse categories</h2><div class="category-grid">${["Tractors", "Harvesters", "Tillers"].map((c) => `<a class="category-card" href="#/explore" data-act="cat" data-v="${c}"><img src="${categoryImage[c]}" alt="${c}"><span>${c}</span></a>`).join("")}<a class="category-card category-more" href="#/explore" data-act="cat" data-v="All types"><span class="category-more-icon"><i class="bi bi-three-dots" aria-hidden="true"></i></span><span>See More</span></a></div>
     <div class="sec-head"><h2>Featured equipment</h2><a href="#/explore">See all</a></div><a href="#/equipment/${f.id}" class="promo"><video autoplay muted loop playsinline preload="none" poster="images/banner.png" aria-label="Featured farm equipment banner"><source src="bannercustomer.mp4" type="video/mp4"></video></a>
@@ -1285,7 +1285,7 @@ const V = {
     const paidRentals = ownerBookings.filter(commissionEligibleBooking);
     const earn = paidRentals.reduce((sum, booking) => sum + Number(booking.total || 0) * (1 - 0.1), 0);
     const r = avg(u.email);
-    return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
+    return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <section class="platform-global-search"><label class="sr-only" for="ownerGlobalSearch">Search users, equipment, or locations</label><input id="ownerGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="ownerGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <div class="promo owner-banner"><video autoplay muted loop playsinline preload="metadata" poster="images/ownerbanner.png" aria-label="AgriRenta equipment owner banner"><source src="ownerbanner.mp4" type="video/mp4"></video></div>
     <div class="head"><div><h2>Owner portal</h2></div><span class="pill">${isVerified(u)?'ID verified owner':'Verification pending'}</span></div>
@@ -1370,7 +1370,7 @@ const V = {
   },
   /* admin */
   admin: (a, u) => { const us = db.users.filter((x) => x.role !== "admin"), pend = queue().length, pendingWithdrawals = db.withdrawals.filter(w=>w.status==="pending"), commissionEarned = db.commissionRecords.reduce((sum, record) => sum + Number(record.amount || 0), 0), rv = db.reviews, damageAgreementEvents = (db.damageAgreementEvents || []).slice().sort((left, right) => Date.parse(right.acceptedAt) - Date.parse(left.acceptedAt)).slice(0, 30);
-    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Administrator</small><h1>Administrator overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
+    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Administrator</small><h1>Administrator overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
     <section class="platform-global-search"><label class="sr-only" for="adminGlobalSearch">Search users, equipment, or locations</label><input id="adminGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="adminGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <a class="promo admin-banner" href="#/queue" aria-label="Open administrator review queue"><video autoplay muted loop playsinline preload="metadata" poster="images/adbanner.png" aria-hidden="true"><source src="adbanner.mp4" type="video/mp4"></video></a>
     <div class="grid stats"><a class="neu stat stat-link" href="#/users"><b>${us.length}</b>Registered users<small>View user accounts →</small></a><a class="neu stat stat-link" href="#/users"><b>${us.filter(isVerified).length}</b>ID verified<small>View verified users →</small></a><a class="neu stat stat-link" href="#/queue"><b>${pend}</b>Pending checks<small>Review submissions →</small></a><a class="neu stat stat-link" href="#/messages"><b>${rv.length ? (rv.reduce((s, x) => s + x.stars, 0) / rv.length).toFixed(1) : "–"}</b>Average rating<small>Open feedback →</small></a><a class="neu stat stat-link" href="#/commission"><b>${peso(commissionEarned)}</b>Commission (10% of eligible rentals)<small>View commission management →</small></a></div>
@@ -1607,7 +1607,7 @@ const TABS = {
   admin: [["admin", "Overview", '<i class="bi bi-speedometer2"></i>'], ["queue", "Verify", '<i class="bi bi-shield-check"></i>'], ["users", "Users", '<i class="bi bi-people"></i>'], ["alerts", "Alerts", '<i class="bi bi-bell"></i>'], ["messages", "Messages", '<i class="bi bi-chat-dots"></i>'], ["profile", "Profile", '<i class="bi bi-gear"></i>']],
   guest: [["explore", "Explore", '<i class="bi bi-search"></i>'], ["login", "Log in", '<i class="bi bi-box-arrow-in-right"></i>']]
 };
-const shell = (html, name, u) => `<div class="shell"><aside class="side"><a class="brand" href="index.html"><img src="logo.webp" alt=""></a>
+const shell = (html, name, u) => `<div class="shell"><aside class="side"><a class="brand" href="index.html"><img src="logo.png" alt=""></a>
   <nav class="nav">${TABS[u ? u.role : "guest"].map((t) => { const count = navNoticeCount(u,t[0]); return `<a href="#/${t[0]}" class="${name === t[0] ? "on" : ""}"><span class="nav-icon-wrap">${t[2]}${count ? `<i class="notification-badge" aria-label="${count} notifications">${count > 9 ? "9+" : count}</i>` : ""}</span>${t[1]}</a>`; }).join("")}</nav>
   <div class="foot">${u ? `<div class="account-mini">${avatar(u)}<div><small class="role-kicker-dark">${roleLabel(u)}</small><b>${u.name}</b><a href="#" data-act="logout"><i class="bi bi-box-arrow-right"></i> Log out</a></div></div>` : `<a href="#/register"><b>Create account</b></a>`}</div></aside><main class="main">${serverApiChecked && !serverApiEnabled ? `<div class="server-mode-warning" role="status"><b>Local-only mode:</b> changes are saved in this browser and will not appear in other accounts. Connect Supabase (see <code>supabase-config.js</code> and README.md) to share equipment and account data.</div>` : ""}${html}</main></div>`;
 
