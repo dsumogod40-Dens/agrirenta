@@ -23,7 +23,7 @@ const eqImages = {
   "Tractor": "images/Agricultural Machinery .png",
   "Rotary Tiller": "images/Rotary Tiller .png",
   "Water Pump": "images/Water Pump .png",
-  "Harvester": "images/harves.webp",
+  "Harvester": "images/harves.png",
   "Thresher": "images/Thresher .png",
   "Hand Tractor": "images/Tiller Neon .png",
   "Power Sprayer": "images/Neon Green Agricultural Sprayer Showcase.png",
