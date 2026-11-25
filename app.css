@@ -14,6 +14,7 @@ p{margin:0 0 .8rem;color:var(--mute)}a{color:inherit}small{color:var(--mute)}
 body.auth{background:#0f2a14;color:#fff}
 body.auth .bg-video,body.auth .bg-shade{display:block}
 body.auth p,body.auth small{color:rgba(255,255,255,.82)}
+.startup-loading{min-height:100vh;display:grid;place-items:center;padding:2rem;color:var(--ink);font-weight:700}
 
 /* surfaces */
 .neu{background:var(--bg);border-radius:24px;box-shadow:9px 9px 20px var(--sd),-9px -9px 20px var(--sl);padding:1.3rem}
@@ -684,4 +685,64 @@ img { max-width:100%; }
     max-width: 30px !important;
     height: 30px !important;
   }
+}
+
+.damage-support,
+.damage-admin-panel {
+  margin-top: 1.25rem;
+}
+
+.damage-report-card,
+.damage-admin-case {
+  display: grid;
+  gap: .75rem;
+}
+
+.damage-response,
+.damage-decision,
+.damage-investigation-note {
+  border-left: 3px solid var(--g2);
+  border-radius: 8px;
+  padding: .65rem .85rem;
+  background: rgba(36, 112, 59, .06);
+}
+
+.damage-decision {
+  border-left-color: #ba7a13;
+  background: rgba(186, 122, 19, .08);
+}
+
+.damage-investigation-note {
+  border-left-color: #486982;
+  background: rgba(72, 105, 130, .08);
+}
+
+.damage-evidence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+}
+
+.damage-evidence-link {
+  font-weight: 700;
+}
+
+.damage-activity {
+  display: block;
+  color: var(--muted);
+}
+
+.damage-report-create,
+.damage-admin-update {
+  margin-top: .75rem;
+}
+
+.damage-report-create > summary,
+.damage-admin-update > summary {
+  cursor: pointer;
+  list-style: none;
+}
+
+.damage-response-form {
+  margin-top: .75rem;
 }
