@@ -49,7 +49,7 @@
       const match = /^storage:\/\/public\/(.+)$/.exec(String(reference || ""));
       return match ? sb.storage.from(PUBLIC_ASSET_BUCKET).getPublicUrl(match[1]).data.publicUrl : reference;
     },
-    async upload(file, kind) {
+    async upload(file, kind, metadata = {}) {
       if (!file || !file.type || !Number.isSafeInteger(file.size) || file.size < 1) {
         throw new Error("The selected file is empty or has no supported file type.");
       }
@@ -57,6 +57,7 @@
         kind,
         contentType:file.type,
         size:file.size,
+        ...(metadata.bookingRef ? { bookingRef:metadata.bookingRef } : {}),
       });
       const result = await response.json();
       if (!response.ok || !result.ok) throw new Error(result.error || "Could not prepare secure file storage.");
@@ -119,6 +120,9 @@
     "POST /api/commission/dispute": passthrough("POST", "/commission/dispute"),
     "POST /api/commission/dispute-review": passthrough("POST", "/commission/dispute-review"),
     "POST /api/commission/settings": passthrough("POST", "/commission/settings"),
+    "POST /api/damage/report": passthrough("POST", "/damage/report"),
+    "POST /api/damage/response": passthrough("POST", "/damage/response"),
+    "POST /api/admin/damage-review": passthrough("POST", "/admin/damage-review"),
 
     "POST /api/login": async (body) => {
       privateUrlCache.clear();
