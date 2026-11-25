@@ -60,7 +60,7 @@ async function createGoogleCustomer(authUser) {
     return state;
   };
   if (await loadRow()) await updateState((state) => addProfile(state));
-  return { id: authUser.id, email, role: "customer", rolePending: true, appMeta: { ...(authUser.app_metadata || {}), role: "customer", role_pending: true } };
+  return { id: authUser.id, email, name, role: "customer", rolePending: true, appMeta: { ...(authUser.app_metadata || {}), role: "customer", role_pending: true } };
 }
 
 async function currentUser(req) {
@@ -73,14 +73,20 @@ async function currentUser(req) {
   const role = authUser.app_metadata?.role;
   if (!role) {
     // Only Google accounts get an automatic role. Email sign-ups made directly against Supabase stay unusable.
-    if (authUser.app_metadata?.provider === "google" && authUser.email_confirmed_at) return await createGoogleCustomer(authUser);
+    const googleProvider = authUser.app_metadata?.provider === "google"
+      || (Array.isArray(authUser.app_metadata?.providers) && authUser.app_metadata.providers.includes("google"))
+      || (Array.isArray(authUser.identities) && authUser.identities.some((identity) => identity.provider === "google"));
+    if (googleProvider && authUser.email_confirmed_at) return await createGoogleCustomer(authUser);
     return null;
   }
   if (!["customer", "owner", "admin"].includes(role)) return null;
   // A Google session can never act as admin.
   if (role === "admin" && tokenUsedOAuth(token)) return null;
   return {
-    id: authUser.id, email: String(authUser.email).toLowerCase(), role,
+    id: authUser.id,
+    email: String(authUser.email).toLowerCase(),
+    name: String(authUser.user_metadata?.full_name || authUser.user_metadata?.name || "").trim(),
+    role,
     rolePending: authUser.app_metadata?.role_pending === true, appMeta: authUser.app_metadata || {},
   };
 }
@@ -870,7 +876,22 @@ function isValidState(state) {
 async function handleBootstrap(req) {
   const body = await req.json().catch(() => null);
   if (!isValidState(body?.state)) throw new HttpError(400, "Initial application data is invalid.");
+  const user = await currentUser(req);
   const state = syncCommissionRecords(stripSecrets(body.state));
+  if (user?.rolePending) {
+    state.users = Array.isArray(state.users) ? state.users : [];
+    let profile = state.users.find((item) => item.email === user.email);
+    if (!profile) {
+      profile = {
+        email: user.email,
+        name: user.name || user.email.split("@")[0],
+        role: "customer",
+        phone: "",
+        v: { email: 1 },
+      };
+      state.users.push(profile);
+    }
+  }
   const { error } = await supabase.from("app_state").insert({ state_key: "main", state, rev: 1 });
   if (error) {
     if (error.code === "23505") throw new HttpError(409, "Application data is already initialized.");
@@ -885,7 +906,9 @@ async function handleBootstrap(req) {
     });
     if (createError && !/already|registered|exists/i.test(createError.message)) throw createError;
   }
-  return send(200, { ok: true, state: publicState(state, null) });
+  const publicResult = publicState(state, user);
+  if (user?.rolePending) publicResult.rolePending = true;
+  return send(200, { ok: true, state: publicResult, rolePending: !!user?.rolePending });
 }
 
 async function handleGetState(req) {
@@ -894,7 +917,7 @@ async function handleGetState(req) {
   if (state && commissionStateNeedsSync(state)) state = await updateState(syncCommissionRecords);
   const result = state ? publicState(state, user) : null;
   if (result && user?.rolePending) result.rolePending = true;
-  return send(200, { ok: true, state: result });
+  return send(200, { ok: true, state: result, rolePending: !!user?.rolePending });
 }
 
 // First Google sign-in: the person picks Customer or Equipment owner (once).
@@ -904,6 +927,11 @@ async function handleRole(req) {
   const body = await req.json().catch(() => ({}));
   const role = body?.role;
   if (!["customer", "owner"].includes(role)) throw new HttpError(400, "Pick Customer or Equipment owner.");
+  const password = String(body?.password || "");
+  const passwordError = passwordValidationError(password);
+  if (passwordError) throw new HttpError(400, passwordError);
+  const passwordUpdate = await supabase.auth.admin.updateUserById(user.id, { password });
+  if (passwordUpdate.error) throw new HttpError(400, passwordUpdate.error.message || "Could not create your password.");
   const { error } = await supabase.auth.admin.updateUserById(user.id, {
     app_metadata: { ...user.appMeta, role, role_pending: false },
   });
@@ -1015,20 +1043,23 @@ async function handlePassword(req) {
   const newPassword = String(body?.newPassword || "");
   const passwordError = passwordValidationError(newPassword);
   if (passwordError) throw new HttpError(400, passwordError);
-  if (!currentPassword) throw new HttpError(400, "Enter your current password.");
-
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
-  const publicKey = Deno.env.get("SUPABASE_ANON_KEY") || req.headers.get("apikey");
-  if (!supabaseUrl || !publicKey) throw new HttpError(503, "Password verification is not configured.");
-  const verification = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
-    method: "POST",
-    headers: { apikey: publicKey, "Content-Type": "application/json" },
-    body: JSON.stringify({ email: user.email, password: currentPassword }),
-  });
-  if (verification.status === 400 || verification.status === 401) {
-    throw new HttpError(401, "Current password is incorrect.");
+  const header = req.headers.get("Authorization") || "";
+  const token = header.startsWith("Bearer ") ? header.slice(7).trim() : "";
+  if (!tokenUsedOAuth(token)) {
+    if (!currentPassword) throw new HttpError(400, "Enter your current password.");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const publicKey = Deno.env.get("SUPABASE_ANON_KEY") || req.headers.get("apikey");
+    if (!supabaseUrl || !publicKey) throw new HttpError(503, "Password verification is not configured.");
+    const verification = await fetch(`${supabaseUrl}/auth/v1/token?grant_type=password`, {
+      method: "POST",
+      headers: { apikey: publicKey, "Content-Type": "application/json" },
+      body: JSON.stringify({ email: user.email, password: currentPassword }),
+    });
+    if (verification.status === 400 || verification.status === 401) {
+      throw new HttpError(401, "Current password is incorrect.");
+    }
+    if (!verification.ok) throw new HttpError(502, "Could not verify the current password. Please try again.");
   }
-  if (!verification.ok) throw new HttpError(502, "Could not verify the current password. Please try again.");
   const { error } = await supabase.auth.admin.updateUserById(user.id, { password: newPassword });
   if (error) throw new HttpError(400, error.message || "Could not update the password.");
   return send(200, { ok: true });
