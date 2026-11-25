@@ -23,7 +23,7 @@ const eqImages = {
   "Tractor": "images/Agricultural Machinery .png",
   "Rotary Tiller": "images/Rotary Tiller .png",
   "Water Pump": "images/Water Pump .png",
-  "Harvester": "images/harves.png",
+  "Harvester": "images/harves.webp",
   "Thresher": "images/Thresher .png",
   "Hand Tractor": "images/Tiller Neon .png",
   "Power Sprayer": "images/Neon Green Agricultural Sprayer Showcase.png",
@@ -220,6 +220,12 @@ window.addEventListener("scroll", onScroll, { passive: true });
 window.addEventListener("resize", measureHow);
 window.addEventListener("load", measureHow);
 measureHow();
+window.addEventListener("load", () => {
+  if (!heroVideo || !heroVideo.dataset.src) return;
+  const startVideo = () => { if (!heroVideo.hasAttribute("src")) heroVideo.src = heroVideo.dataset.src; };
+  if ("requestIdleCallback" in window) window.requestIdleCallback(startVideo, { timeout: 2000 });
+  else window.setTimeout(startVideo, 1000);
+}, { once: true });
 
 /* ---------- ANCHOR LINKS: land on the right section even with the pinned "How it works" ---------- */
 function goTo(hash, smooth) {
