@@ -47,7 +47,7 @@
   .gcash-brand small{display:block;color:#71877d;margin-top:4px}
   .amount{font-size:32px;font-weight:850;letter-spacing:-1px;margin:9px 0 5px;color:#143e2c}
   .merchant{display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--line);padding-bottom:20px;margin-bottom:20px}
-  .merchant-logo{width:42px;height:42px;object-fit:contain;border-radius:50%;background:#e4f3e1;padding:4px;border:1px solid #d4e9d1;box-shadow:3px 3px 7px rgba(50,105,60,.16),-3px -3px 7px rgba(255,255,255,.85)}
+  .merchant-logo{width:42px;height:42px;display:grid;place-items:center;flex:none;border-radius:50%;background:#e4f3e1;color:#087b4b;font-weight:850;border:1px solid #d4e9d1;box-shadow:3px 3px 7px rgba(50,105,60,.16),-3px -3px 7px rgba(255,255,255,.85)}
   .merchant small{display:block;color:var(--muted);margin-top:4px}
   .label{font-size:12px;font-weight:800;color:#617b6e;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px}
   .detail-row{display:flex;justify-content:space-between;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);font-size:14px}
@@ -84,7 +84,7 @@
 </head>
 <body>
 <header class="topbar">
-  <div class="brand"><img src="logo.png" alt="AgriRenta logo" onerror="this.style.display='none'"><span>AgriRenta</span></div>
+  <div class="brand"><img src="logo.webp" alt="AgriRenta logo" onerror="this.style.display='none'"><span>AgriRenta</span></div>
   <span class="demo-pill">PAYMENT DEMO</span>
 </header>
 
@@ -99,7 +99,7 @@
 
   <section class="screen active" id="loadingScreen">
     <div class="loading-card">
-      <img class="logo-large" src="logo.png" alt="AgriRenta logo" onerror="this.style.visibility='hidden'">
+      <img class="logo-large" src="logo.webp" alt="AgriRenta logo" onerror="this.style.visibility='hidden'">
       <div class="spinner" aria-hidden="true"></div>
       <h1>Preparing your GCash payment</h1>
       <p class="muted">Mag-andam ang AgriRenta sa payment demo.<br>Secure checkout page will open in a moment.</p>
@@ -115,12 +115,12 @@
             <img src="images/gcash.jpg" alt="GCash logo" onerror="this.alt='GCash';this.style.background='#eaf2ff'">
             <div><strong>GCash</strong><small>Payment checkout preview</small></div>
           </div>
-          <div class="label">Pay merchant</div>
+          <div class="label">Pay equipment owner</div>
           <div class="amount" id="amountDisplay">₱9,600.00</div>
-          <p class="muted" style="font-size:14px;margin-bottom:25px">You are paying <strong style="color:#183f30">AgriRenta</strong> for your equipment rental.</p>
+          <p class="muted" style="font-size:14px;margin-bottom:25px">The rental payment is for the equipment owner, not AgriRenta.</p>
           <div class="merchant">
-            <img class="merchant-logo" src="logo.png" alt="">
-            <div><strong>AgriRenta</strong><small>Farm equipment rental platform</small></div>
+            <span class="merchant-logo" id="recipientInitials" aria-hidden="true">EO</span>
+            <div><strong id="recipientName">Equipment Owner</strong><small>Rental payment recipient · simulation only</small></div>
           </div>
           <div class="demo-banner"><span class="demo-dot"></span><div><strong>Demonstration only</strong><br>This screen imitates a checkout flow for your school project. It is not the official GCash website and will not collect login details.</div></div>
           <button class="btn btn-blue" id="loginPayBtn">Login to Pay <span aria-hidden="true">›</span></button>
@@ -131,7 +131,7 @@
           <div class="label">Payment summary</div>
           <h3 style="margin-bottom:8px">Booking details</h3>
           <p class="muted" style="font-size:13px">Review the sample transaction details below.</p>
-          <div class="detail-row"><span>Merchant</span><strong>AgriRenta</strong></div>
+          <div class="detail-row"><span>Recipient</span><strong id="recipientSummary">Equipment Owner</strong></div>
           <div class="detail-row"><span>Payment method</span><strong>GCash (demo)</strong></div>
           <div class="detail-row"><span>Booking reference</span><strong id="referenceDisplay">Waiting for booking</strong></div>
           <div class="detail-row"><span>Rental fee</span><strong id="rentalFee">₱9,600.00</strong></div>
@@ -168,6 +168,11 @@
 <script>
   const params = new URLSearchParams(location.search);
   const reference = params.get("reference") || "";
+  const recipientName = params.get("recipient") || "Equipment Owner";
+  const recipientParts = recipientName.trim().split(/\s+/).filter(Boolean);
+  const recipientInitials = recipientParts.length > 1
+    ? `${recipientParts[0][0]}${recipientParts[recipientParts.length - 1][0]}`.toUpperCase()
+    : (recipientParts[0] || "EO").slice(0, 2).toUpperCase();
   const requestedAmount = Number(params.get("amount"));
   const DEMO_AMOUNT = Number.isFinite(requestedAmount) && requestedAmount > 0 ? requestedAmount : 0;
   const money = new Intl.NumberFormat('en-PH', { style:'currency', currency:'PHP' });
@@ -175,6 +180,9 @@
   document.getElementById('rentalFee').textContent = money.format(DEMO_AMOUNT);
   document.getElementById('totalFee').textContent = money.format(DEMO_AMOUNT) + '+';
   document.getElementById('referenceDisplay').textContent = reference || 'Missing booking reference';
+  document.getElementById('recipientName').textContent = recipientName;
+  document.getElementById('recipientSummary').textContent = recipientName;
+  document.getElementById('recipientInitials').textContent = recipientInitials;
 
   const screens = {
     loading: document.getElementById('loadingScreen'),
