@@ -3,11 +3,13 @@
 
 /* ---------- Data ---------- */
 const IMG = {
-  tractor: "images/Agricultural Machinery .png", harvester: "images/harves.png", tiller: "images/Tiller Neon .png",
+  tractor: "images/Agricultural Machinery .png", harvester: "images/harves.webp", tiller: "images/Tiller Neon .png",
   rotary: "images/Rotary Tiller .png", pump: "images/Water Pump .png", thresher: "images/Thresher .png",
   sprayer: "images/Neon Green Agricultural Sprayer Showcase.png"
 };
 const CATS = ["All types", "Tractors", "Harvesters", "Tillers", "Harvesting tools", "Post-harvest", "Hand tools", "Powered tools", "Livestock", "Aquaculture", "Safety gear", "Transport", "Others"];
+const DAMAGE_AGREEMENT_VERSION = "agri-damage-v2";
+const DAMAGE_AGREEMENT_TERMS = "Before handover, the owner and renter should document the equipment's condition. After return, they should inspect it again. The renter is responsible only for damage caused by negligence or misuse. Normal wear and tear and mechanical failure unrelated to misuse remain the owner's responsibility. Either booking participant may submit a damage report with evidence and respond to the other party. An administrator reviews the case and records any decision. Repair costs are informational only; AgriRenta does not automatically charge or deduct money.";
 const LOCATIONS = ["Bunawan Brook, Bunawan, Agusan del Sur","Consuelo, Bunawan, Agusan del Sur","Imelda, Bunawan, Agusan del Sur","Libertad, Bunawan, Agusan del Sur","Mambalili, Bunawan, Agusan del Sur","Nueva Era, Bunawan, Agusan del Sur","Poblacion, Bunawan, Agusan del Sur","San Andres, Bunawan, Agusan del Sur","San Marcos, Bunawan, Agusan del Sur","San Teodoro, Bunawan, Agusan del Sur"];
 const ROLE_LABEL = {customer:"Customer", owner:"Equipment Owner", admin:"Administrator"};
 const categoryImage = {Tractors:IMG.tractor, Harvesters:IMG.harvester, Tillers:IMG.tiller, Others:IMG.pump};
@@ -482,6 +484,12 @@ db.availability = Array.isArray(db.availability) ? db.availability : [];
 db.eq = Array.isArray(db.eq) ? db.eq : structuredClone(SEED.eq);
 db.users = Array.isArray(db.users) ? db.users : structuredClone(SEED.users);
 db.bookings = Array.isArray(db.bookings) ? db.bookings : [];
+db.damageAgreementEvents = Array.isArray(db.damageAgreementEvents) ? db.damageAgreementEvents : [];
+db.damageReports = Array.isArray(db.damageReports) ? db.damageReports : [];
+db.damageResponses = Array.isArray(db.damageResponses) ? db.damageResponses : [];
+db.damageDecisions = Array.isArray(db.damageDecisions) ? db.damageDecisions : [];
+db.damageInvestigationNotes = Array.isArray(db.damageInvestigationNotes) ? db.damageInvestigationNotes : [];
+db.damageAuditEvents = Array.isArray(db.damageAuditEvents) ? db.damageAuditEvents : [];
 db.reviews = Array.isArray(db.reviews) ? db.reviews : [];
 db.withdrawals = Array.isArray(db.withdrawals) ? db.withdrawals : [];
 db.messages = Array.isArray(db.messages) ? db.messages : [];
@@ -505,6 +513,7 @@ const normalizeState = (state) => {
   db.eq = Array.isArray(db.eq) ? db.eq : structuredClone(SEED.eq);
   db.users = Array.isArray(db.users) ? db.users : structuredClone(SEED.users);
   db.bookings = Array.isArray(db.bookings) ? db.bookings : [];
+  db.damageAgreementEvents = Array.isArray(db.damageAgreementEvents) ? db.damageAgreementEvents : [];
   db.reviews = Array.isArray(db.reviews) ? db.reviews : [];
   db.withdrawals = Array.isArray(db.withdrawals) ? db.withdrawals : [];
   db.messages = Array.isArray(db.messages) ? db.messages : [];
@@ -566,6 +575,7 @@ const readPendingState = () => {
 };
 let serverApiEnabled = false;
 let serverApiChecked = false;
+let backgroundVideoTimer = 0;
 let rolePending = false; // true right after a first Google sign-in, until the person picks Customer or Equipment owner
 let pendingPersistTimer = null;
 let pendingPersistPromise = null;
@@ -700,6 +710,80 @@ const homeOf = (u) => ({ customer: "#/home", owner: "#/dashboard", admin: "#/adm
 const toast = (m) => { const t = $("#toast"); t.textContent = m; t.classList.add("show"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.remove("show"), 2600); };
 const initial = (n) => (n || "?")[0].toUpperCase();
 const escapeHtml = (value) => String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;", "'":"&#39;" })[char]);
+const bookingDamageAgreementEvents = (bookingRef) => (db.damageAgreementEvents || [])
+  .filter((event) => event.bookingRef === bookingRef)
+  .sort((left, right) => Date.parse(left.acceptedAt) - Date.parse(right.acceptedAt));
+const recordLocalDamageAgreementAcceptance = (booking, eventType) => {
+  const events = bookingDamageAgreementEvents(booking.ref);
+  if (events.some((event) => event.eventType === eventType)) return;
+  const renterAcceptance = events.find((event) => event.eventType === "renter_accepted");
+  if (eventType === "owner_accepted" && !renterAcceptance) return;
+  const event = {
+    id: crypto.randomUUID(),
+    bookingRef: booking.ref,
+    renter: booking.renter,
+    owner: booking.owner,
+    actorEmail: eventType === "renter_accepted" ? booking.renter : booking.owner,
+    actorRole: eventType === "renter_accepted" ? "customer" : "owner",
+    eventType,
+    version: renterAcceptance?.version || DAMAGE_AGREEMENT_VERSION,
+    acceptedAt: new Date().toISOString(),
+  };
+  if (eventType === "renter_accepted") event.termsSnapshot = DAMAGE_AGREEMENT_TERMS;
+  else event.agreementEventId = renterAcceptance.id;
+  db.damageAgreementEvents.push(event);
+};
+const bookingDamageAgreementHtml = (booking) => {
+  const events = bookingDamageAgreementEvents(booking.ref);
+  const renterAcceptance = events.find((event) => event.eventType === "renter_accepted");
+  if (!renterAcceptance) {
+    return `<section class="neu"><h3>Equipment damage agreement</h3><p>No damage agreement was recorded for this booking. This may be an older booking created before the agreement was added.</p></section>`;
+  }
+  const ownerAcceptance = events.find((event) => event.eventType === "owner_accepted"
+    && event.version === renterAcceptance.version && event.agreementEventId === renterAcceptance.id);
+  const acceptedAt = (event) => event ? new Date(event.acceptedAt).toLocaleString() : "Not yet accepted";
+  return `<section class="neu"><h3>Equipment damage agreement</h3><p><b>Version:</b> ${escapeHtml(renterAcceptance.version)}</p><p>${escapeHtml(renterAcceptance.termsSnapshot)}</p><p><b>Renter accepted:</b> ${escapeHtml(acceptedAt(renterAcceptance))}</p><p><b>Owner accepted by approving:</b> ${escapeHtml(acceptedAt(ownerAcceptance))}</p></section>`;
+};
+const damageEvidenceLinks = (references, metadata = []) => (references || []).map((reference, index) => {
+  const file = (metadata || []).find((item) => item.reference === reference);
+  return `<a class="damage-evidence-link" ${privateAssetAttributes(reference, "href")} target="_blank" rel="noopener">${escapeHtml(file?.fileName || `Evidence file ${index + 1}`)}</a>`;
+}
+).join(" ");
+const bookingDamageSupportHtml = (booking, user) => {
+  if (!["approved", "returned"].includes(booking.status)) return "";
+  const reports = (db.damageReports || []).filter((report) => report.bookingRef === booking.ref);
+  const canReport = user.role !== "admin";
+  const reportCards = reports.map((report) => {
+    const responses = (db.damageResponses || []).filter((response) => response.reportId === report.id);
+    const decisions = (db.damageDecisions || []).filter((decision) => decision.reportId === report.id)
+      .sort((left, right) => left.decisionNumber - right.decisionNumber);
+    const notes = (db.damageInvestigationNotes || []).filter((note) => note.reportId === report.id);
+    const audit = (db.damageAuditEvents || []).filter((event) => event.reportId === report.id);
+    const canRespond = user.role !== "admin" && !["resolved", "closed"].includes(report.status);
+    return `<article class="neu damage-report-card"><div class="row"><h3>${escapeHtml(report.title)}</h3>${pill(report.status)}</div>
+      <p><b>Reported by:</b> ${escapeHtml(usr(report.reportedByEmail).name)} · ${escapeHtml(report.category.replaceAll("_", " "))}</p>
+      ${report.incidentDate ? `<p><b>Incident date:</b> ${escapeHtml(report.incidentDate)}</p>` : ""}
+      <p>${escapeHtml(report.description)}</p><div class="damage-evidence-list">${damageEvidenceLinks(report.evidenceRefs, report.evidenceMetadata)}</div>
+      ${responses.map((response) => `<div class="damage-response"><b>${escapeHtml(usr(response.authorEmail).name)} responded</b><p>${escapeHtml(response.message)}</p><small>${new Date(response.createdAt).toLocaleString()}</small><div class="damage-evidence-list">${damageEvidenceLinks(response.evidenceRefs, response.evidenceMetadata)}</div></div>`).join("")}
+      ${notes.map((note) => `<div class="damage-investigation-note"><b>Administrator ${note.visibility === "participants" ? "update" : "note"}</b><p>${escapeHtml(note.text)}</p><small>${new Date(note.createdAt).toLocaleString()}</small><div class="damage-evidence-list">${damageEvidenceLinks(note.evidenceRefs, note.evidenceMetadata)}</div></div>`).join("")}
+      ${decisions.map((decision) => `<div class="damage-decision"><b>Administrator decision ${decision.decisionNumber}</b><p>Responsibility: ${escapeHtml(decision.responsibility.replaceAll("_", " "))}${decision.repairCost === null ? "" : ` · Estimated repair cost: ${peso(decision.repairCost)} (not charged)`}</p><p>${escapeHtml(decision.summary)}</p><small>${new Date(decision.createdAt).toLocaleString()}</small></div>`).join("")}
+      ${audit.map((event) => `<small class="damage-activity">${escapeHtml(event.eventType.replaceAll("_", " "))} · ${new Date(event.createdAt).toLocaleString()}</small>`).join("")}
+      ${canRespond ? `<form data-form="damage-response" data-report-id="${escapeHtml(report.id)}" data-booking-ref="${escapeHtml(booking.ref)}" class="stack damage-response-form"><label>Response to this report</label><textarea name="message" rows="3" maxlength="3000" required placeholder="Share your account of what happened"></textarea><label>Attach evidence (up to 5 files, 10 MB each)</label><input name="evidence" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple><button class="btn btn-soft" ${serverApiEnabled ? "" : "disabled"}>Send response</button></form>` : ""}
+    </article>`;
+  }).join("");
+  return `<section class="neu damage-support"><h2>Damage reports and support</h2>
+    <p>Report equipment damage here, attach supporting evidence, and let both booking participants respond. An administrator reviews responsibility. No automatic charge or deduction is made.</p>
+    ${reports.length ? `<div class="stack">${reportCards}</div>` : "<p>No damage reports have been submitted for this booking.</p>"}
+    ${canReport ? `<details class="damage-report-create"><summary class="btn btn-primary">${reports.length ? "Submit another damage report" : "Report equipment damage"}</summary>
+      <form data-form="damage-report" data-booking-ref="${escapeHtml(booking.ref)}" class="stack"><label>Report title</label><input name="title" maxlength="120" required placeholder="e.g. Cracked hydraulic hose">
+      <label>Report type</label><select name="category" required><option value="damage">Physical damage</option><option value="mechanical_failure">Mechanical failure</option><option value="other">Other concern</option></select>
+      <label>Incident date (if known)</label><input name="incidentDate" type="date">
+      <label>Describe what happened</label><textarea name="description" rows="4" minlength="10" maxlength="3000" required placeholder="Include when you noticed it and relevant circumstances"></textarea>
+      <label>Attach evidence (up to 5 files, 10 MB each)</label><input name="evidence" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>
+      <button class="btn btn-primary" ${serverApiEnabled ? "" : "disabled"}>Submit damage report</button></form></details>` : ""}
+    ${serverApiEnabled ? "" : '<p class="server-mode-warning" role="status">Damage reporting requires the connected AgriRenta backend.</p>'}
+  </section>`;
+};
 const passwordValidationError = (password) => {
   const missing = [];
   if (password.length < 8) missing.push("at least 8 characters");
@@ -791,7 +875,7 @@ const badge = (u) => (isVerified(u) ? `<span class="pill">✓ ID verified</span>
 let regRole = "customer", cat = "All types", q = "", idType = "PhilSys ID", draft = null, rate = { stars: 4, tags: [] }, maxPrice = "", sortBy = "recommended", draftUnavailableDates = [];
 
 /* ---------- Views: each returns [html, "auth" | "app"] ---------- */
-const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.png" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
+const authCard = (inner) => [`<main class="authwrap"><section class="glass authcard"><a href="index.html" class="logo" aria-label="Home"><img src="logo.webp" alt="AgriRenta"></a>${inner}</section></main>`, "auth"];
 const passwordField = (id, name, label, autocomplete, placeholder="") => `<label for="${id}">${label}</label><div class="password-field"><input id="${id}" name="${name}" type="password" autocomplete="${autocomplete}" placeholder="${placeholder}" required><button type="button" class="password-toggle" data-password-toggle data-target="${id}" data-field-label="${label.toLowerCase()}" aria-label="Show ${label.toLowerCase()}" aria-pressed="false" title="Show ${label.toLowerCase()}"><i class="bi bi-eye" aria-hidden="true"></i></button></div>`;
 const isFav = (e, email = db.me) => !!(email && (db.favorites[email] || []).map(String).includes(String(e)));
 const eqCard = (e) => `<article class="neu card equipment-card"><a class="equipment-open" href="#/equipment/${e.id}"><img src="${img(e.img)}" alt="${e.name}" loading="lazy" decoding="async"><h3>${e.name}</h3><p>${e.spec}</p></a>
@@ -918,6 +1002,57 @@ const ownerCommissionPage = (tab, u, recordId) => {
     <section aria-live="polite">${content}</section></section>`, "app"];
 };
 
+function adminDamageCasesHtml() {
+  const transitions = {
+    submitted:["under_review", "awaiting_response"],
+    under_review:["awaiting_response", "resolved", "closed"],
+    awaiting_response:["under_review", "resolved", "closed"],
+    resolved:["reopened"],
+    reopened:["under_review", "awaiting_response", "resolved", "closed"],
+    closed:["reopened"],
+  };
+  const reports = [...(db.damageReports || [])].sort((left, right) => Date.parse(right.createdAt) - Date.parse(left.createdAt));
+  return `<section class="neu damage-admin-panel"><h2>Damage investigations</h2>
+    <p>Review reports, participant responses, evidence, and decision history. Cost entries do not charge or deduct funds.</p>
+    <div class="stack">${reports.map((report) => {
+      const bookingMatches = db.bookings.filter((booking) => booking.ref === report.bookingRef);
+      const booking = bookingMatches.length === 1 ? bookingMatches[0] : null;
+      const equipment = booking ? bookingEquipment(booking) : null;
+      const responses = (db.damageResponses || []).filter((response) => response.reportId === report.id);
+      const decisions = (db.damageDecisions || []).filter((decision) => decision.reportId === report.id)
+        .sort((left, right) => left.decisionNumber - right.decisionNumber);
+      const notes = (db.damageInvestigationNotes || []).filter((note) => note.reportId === report.id);
+      const activity = (db.damageAuditEvents || []).filter((event) => event.reportId === report.id);
+      const options = [report.status, ...(transitions[report.status] || [])];
+      return `<article class="neu damage-admin-case"><div class="row"><h3>${escapeHtml(report.title)}</h3>${pill(report.status)}</div>
+        <p><b>Booking:</b> ${escapeHtml(report.bookingRef)} · <b>Equipment:</b> ${escapeHtml(equipment?.name || "Booking/equipment unavailable")}
+          ${bookingMatches.length !== 1 ? `<span class="server-mode-warning">Duplicate or missing booking reference; changes are blocked.</span>` : ""}</p>
+        <p><b>Owner:</b> ${escapeHtml(report.ownerEmail)} · <b>Renter:</b> ${escapeHtml(report.renterEmail)}</p>
+        <p><b>Submitted by:</b> ${escapeHtml(report.reportedByEmail)} · ${escapeHtml(report.category.replaceAll("_", " "))} · ${new Date(report.createdAt).toLocaleString()}</p>
+        <p>${escapeHtml(report.description)}</p><div class="damage-evidence-list">${damageEvidenceLinks(report.evidenceRefs, report.evidenceMetadata)}</div>
+        ${responses.map((response) => `<div class="damage-response"><b>${escapeHtml(response.authorEmail)} responded · ${new Date(response.createdAt).toLocaleString()}</b><p>${escapeHtml(response.message)}</p><div class="damage-evidence-list">${damageEvidenceLinks(response.evidenceRefs, response.evidenceMetadata)}</div></div>`).join("")}
+        ${notes.map((note) => `<div class="damage-investigation-note"><b>${note.visibility === "admin" ? "Internal admin note" : "Shared admin update"} · ${new Date(note.createdAt).toLocaleString()}</b><p>${escapeHtml(note.text)}</p><div class="damage-evidence-list">${damageEvidenceLinks(note.evidenceRefs, note.evidenceMetadata)}</div></div>`).join("")}
+        ${decisions.map((decision) => `<div class="damage-decision"><b>Decision ${decision.decisionNumber} · ${escapeHtml(decision.responsibility)}</b>
+          <p>${escapeHtml(decision.summary)}</p><p>Informational repair cost: ${decision.repairCost === null ? "Not set" : peso(decision.repairCost)} · ${escapeHtml(decision.adminEmail)} · ${new Date(decision.createdAt).toLocaleString()}</p></div>`).join("")}
+        <details class="damage-admin-update"><summary class="btn btn-soft">Update investigation</summary>
+          <form data-form="admin-damage-review" data-report-id="${escapeHtml(report.id)}" data-booking-ref="${escapeHtml(report.bookingRef)}" class="stack">
+            <label>Investigation status</label><select name="status" required>${options.map((status) => `<option value="${status}">${status.replaceAll("_", " ")}</option>`).join("")}</select>
+            <label>Decision responsibility (required when resolving/closing)</label><select name="responsibility"><option value="">No new decision</option><option value="renter">Renter responsible</option><option value="owner">Owner responsible</option><option value="shared">Shared responsibility</option><option value="undetermined">Responsibility undetermined</option></select>
+            <label>Informational repair-cost estimate (₱)</label><input name="repairCost" type="number" min="0" max="10000000" step="0.01" placeholder="Optional; never charged automatically">
+            <label>Decision explanation (required for a new final decision)</label><textarea name="decisionSummary" rows="3" maxlength="3000"></textarea>
+            <label>Investigation note (optional)</label><textarea name="investigationNote" rows="3" maxlength="3000"></textarea>
+            <label>Note visibility</label><select name="noteVisibility"><option value="admin">Admin-only</option><option value="participants">Share with booking participants</option></select>
+            <label>Attach investigation evidence (up to 5 files)</label><input name="evidence" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" multiple>
+            <button class="btn btn-primary" ${serverApiEnabled && booking ? "" : "disabled"}>Save investigation update</button>
+          </form>
+        </details>
+        <small>${activity.map((event) => `${escapeHtml(event.eventType.replaceAll("_", " "))} · ${new Date(event.createdAt).toLocaleString()}`).join("<br>")}</small>
+      </article>`;
+    }).join("") || "<p>No equipment damage reports have been submitted.</p>"}</div>
+    ${serverApiEnabled ? "" : '<p class="server-mode-warning" role="status">Damage investigation requires the connected AgriRenta backend.</p>'}
+  </section>`;
+}
+
 const V = {
   welcome: () => authCard(`<h1>Grow more. Rent smarter.</h1><p>Find trusted, verified farm equipment nearby and rent what you need, when you need it.</p>
     <a class="btn btn-primary btn-block" href="#/register">Get Started</a><a class="btn btn-soft btn-block" href="#/login">Log in</a><a class="link" href="#/explore">Continue as guest</a>`),
@@ -1029,18 +1164,21 @@ const V = {
       <div id="paymentMethodMessage" class="payment-method-message"></div>
     </section>
     <div class="neu sum"><h3>Cost breakdown</h3><div><span>Rental fee</span><b>${peso(e.price * d)}</b></div><div><span>Deposit (if required)</span><small>To be confirmed</small></div><div><span>Delivery</span><small>Calculated separately</small></div><div class="tot"><span>Total estimate</span><span>${peso(e.price * d)}+</span></div></div>
-    <label class="check"><input type="checkbox" name="termsAccepted" value="yes" required> I have reviewed the rental terms.</label><button class="btn btn-primary">Submit Rental Request</button></form>`, "app"]; },
+    <label class="check"><input type="checkbox" name="termsAccepted" value="yes" required> I have reviewed the rental terms.</label>
+    <section class="neu"><h3>Equipment condition and damage agreement</h3><p>${escapeHtml(DAMAGE_AGREEMENT_TERMS)}</p><label class="check"><input type="checkbox" name="damageTermsAccepted" value="yes" required> I have read and agree to this damage agreement (version ${escapeHtml(DAMAGE_AGREEMENT_VERSION)}).</label></section>
+    <button class="btn btn-primary">Submit Rental Request</button></form>`, "app"]; },
 
-  submitted: (ref) => { const bookingRef = decodeURIComponent(ref || ""); const b = db.bookings.find((x) => x.ref === bookingRef); if (!b) return V.bookings(null, me()); const e = bookingEquipment(b);
+  submitted: (ref, u) => { const bookingRef = decodeURIComponent(ref || ""); const b = db.bookings.find((x) => x.ref === bookingRef); if (!b || (u?.role !== "admin" && b.renter !== u?.email && b.owner !== u?.email)) return V.bookings(null, me()); const e = bookingEquipment(b);
     return [`<div class="neu" style="max-width:520px;margin:2rem auto;text-align:center"><div class="ico" style="width:80px;height:80px;margin:0 auto 1rem;background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-size:2rem">✓</div>
     <h1>Rental details</h1><p>${b.status === "pending" ? "Your rental request is waiting for the equipment owner." : "Booking reference and rental status."}</p><div class="neu inset" style="text-align:left"><small>BOOKING REFERENCE</small><div class="row"><h2>${escapeHtml(b.ref)}</h2>${pill(b.status || "pending")}</div>
     <b>${escapeHtml(e.name)} · ${escapeHtml(e.spec)}</b><p>${fmt(b.start)} – ${fmt(b.end)}</p><div class="row"><span>Estimated rental fee</span><b class="price">${peso(b.total)}+</b></div><div class="row"><span>Payment method</span><b>${escapeHtml(b.pay || "Not selected")}</b></div><div class="row"><span>Payment status</span><b>${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</b></div><p><a href="#/equipment/${e.id}">View equipment</a> · <a href="#/owner/${encodeURIComponent(b.owner)}">View equipment owner</a></p><small>The owner sees your ID badge and star rating before approving.</small></div>
+    ${bookingDamageAgreementHtml(b)}
     <p style="margin-top:1rem"><b>What happens next?</b> ${b.pay === "Cash on Delivery (COD)" ? "The owner will review the request. Pay when the rental is delivered or collected, then the owner or administrator should record payment received." : "The equipment owner will review your booking request."}</p>
-    <a class="btn btn-primary btn-block" href="#/bookings">View My Bookings</a><a class="btn btn-soft btn-block" href="#/home">Back to Home</a></div>`, "app"]; },
+    <a class="btn btn-primary btn-block" href="#/bookings">View My Bookings</a><a class="btn btn-soft btn-block" href="#/home">Back to Home</a></div>${bookingDamageSupportHtml(b, u)}`, "app"]; },
 
   home: (a, u) => { const f = db.eq.find(e=>(!e.status||e.status==="approved") && e.visible !== false) || db.eq[0], steps = [!!u.phone && u.v.mobile, u.v.email, u.v.id === "ok", u.v.selfie === "ok"].filter(Boolean).length;
     const hr = new Date().getHours(), hi = hr < 12 ? "Good morning" : hr < 18 ? "Good afternoon" : "Good evening";
-    return [`<header class="hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">${roleLabel(u)}</small><h1>${hi}, ${u.name.split(" ")[0]}</h1><p>Ready to get work done?</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
+    return [`<header class="hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">${roleLabel(u)}</small><h1>${hi}, ${u.name.split(" ")[0]}</h1><p>Ready to get work done?</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <input id="q" class="searchbar" placeholder="Search equipment or location..." value="${q}" onkeydown="if(event.key==='Enter'){q=this.value.trim();cat='All types';go('#/explore')}">
     <h2 style="margin-top:1.4rem">Browse categories</h2><div class="category-grid">${["Tractors", "Harvesters", "Tillers"].map((c) => `<a class="category-card" href="#/explore" data-act="cat" data-v="${c}"><img src="${categoryImage[c]}" alt="${c}"><span>${c}</span></a>`).join("")}<a class="category-card category-more" href="#/explore" data-act="cat" data-v="All types"><span class="category-more-icon"><i class="bi bi-three-dots" aria-hidden="true"></i></span><span>See More</span></a></div>
     <div class="sec-head"><h2>Featured equipment</h2><a href="#/explore">See all</a></div><a href="#/equipment/${f.id}" class="promo"><video autoplay muted loop playsinline preload="none" poster="images/banner.png" aria-label="Featured farm equipment banner"><source src="bannercustomer.mp4" type="video/mp4"></video></a>
@@ -1147,7 +1285,7 @@ const V = {
     const paidRentals = ownerBookings.filter(commissionEligibleBooking);
     const earn = paidRentals.reduce((sum, booking) => sum + Number(booking.total || 0) * (1 - 0.1), 0);
     const r = avg(u.email);
-    return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
+    return [`<header class="hello owner-hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Equipment Owner</small><h1>Owner dashboard</h1><p>Manage listings and rental requests.</p></div><a class="header-profile" href="#/profile" aria-label="Open profile">${avatar(u)}</a></header>
     <section class="platform-global-search"><label class="sr-only" for="ownerGlobalSearch">Search users, equipment, or locations</label><input id="ownerGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="ownerGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <div class="promo owner-banner"><video autoplay muted loop playsinline preload="metadata" poster="images/ownerbanner.png" aria-label="AgriRenta equipment owner banner"><source src="ownerbanner.mp4" type="video/mp4"></video></div>
     <div class="head"><div><h2>Owner portal</h2></div><span class="pill">${isVerified(u)?'ID verified owner':'Verification pending'}</span></div>
@@ -1163,7 +1301,7 @@ const V = {
       const canPayCommission = commissionReady && commission && !commissionArchived
         && commissionRemaining(commission) >= 0.01 && !["disputed", "waived"].includes(commission.status);
       return `<div id="booking-${escapeHtml(b.ref)}" class="neu"><div class="item"><a href="#/member/${encodeURIComponent(c.email)}" aria-label="View ${escapeHtml(c.name)} profile">${avatar(c)}</a><div><b><a href="#/member/${encodeURIComponent(c.email)}">${escapeHtml(c.name)}</a></b> ${isVerified(c) ? "✓" : ""}<p>${rr ? stars(rr.v) + " " + rr.v.toFixed(1) : "New renter"}</p></div>${pill(b.status)}</div><p>${escapeHtml(e.name)} · ${fmt(b.start)} – ${fmt(b.end)} · ${peso(b.total)}</p><p><b>Payment:</b> ${escapeHtml(b.pay || "Not selected")} · <b>Status:</b> ${escapeHtml(String(b.paymentStatus || "pending").replaceAll("_"," "))}</p>
-      ${b.status === "pending" ? `<button class="btn btn-primary btn-sm" data-act="approve" data-v="${b.ref}">Approve</button> ${b.pay === "GCash" ? `<p class="payment-note" role="note">GCash requests cannot be declined. Only COD requests can be declined.</p>` : `<button class="btn btn-soft btn-sm btn-danger" data-act="decline" data-v="${b.ref}">Decline</button>`}` : ""}
+      ${b.status === "pending" ? `${b.damageAgreementRequired ? `<p class="payment-note" role="note">Approving also records your acceptance of the renter's damage agreement.</p>` : ""}<a class="btn btn-soft btn-sm" href="#/submitted/${encodeURIComponent(b.ref)}">Review rental and agreement</a> <button class="btn btn-primary btn-sm" data-act="approve" data-v="${b.ref}">${b.damageAgreementRequired ? "Approve & accept agreement" : "Approve"}</button> ${b.pay === "GCash" ? `<p class="payment-note" role="note">GCash requests cannot be declined. Only COD requests can be declined.</p>` : `<button class="btn btn-soft btn-sm btn-danger" data-act="decline" data-v="${b.ref}">Decline</button>`}` : ""}
       ${b.pay === "Cash on Delivery (COD)" && b.paymentStatus !== "paid" && b.status !== "declined" ? `<button class="btn btn-soft btn-sm" data-act="markpaid" data-v="${b.ref}">Mark payment received</button>` : ""}
       ${b.status === "approved" ? `<button class="btn btn-primary btn-sm" data-act="returned" data-v="${b.ref}">Mark returned (commission applies)</button><p class="payment-note" role="note">After the renter's payment is confirmed, your 10% commission will appear under <a href="#/owner-commission">My Commission</a> and must be paid by its due date.</p>` : ""}
       ${canPayCommission ? `<a class="btn btn-primary btn-sm" href="#/owner-commission/pay/${encodeURIComponent(commission.id)}">Pay commission ${peso(commissionRemaining(commission))} (simulation)</a>` : ""}
@@ -1231,12 +1369,14 @@ const V = {
     <h3>Commission cash-out history</h3><div class="stack">${requests.map(w=>{const simulatedRequest=w.source==="simulation";return `<div class="neu item"><div><b>${peso(w.amount)} · ${escapeHtml(w.method)}</b><p>${escapeHtml(w.accountName)} · ${escapeHtml(w.accountRef)}</p>${simulatedRequest?'<p class="server-mode-warning" role="note">SIMULATION ONLY — no funds transferred.</p>':""}<small>${new Date(w.createdAt).toLocaleString()}</small></div>${simulatedRequest?'<span class="pill warn">Simulation only</span>':pill(w.status)}${!simulatedRequest&&w.status==="pending"?`<button class="btn btn-soft btn-sm" data-act="commissionpaid" data-v="${escapeHtml(w.id)}">Mark transferred</button>`:""}</div>`;}).join("")||"<p>No commission cash-out requests yet.</p>"}</div></section>`, "app"];
   },
   /* admin */
-  admin: (a, u) => { const us = db.users.filter((x) => x.role !== "admin"), pend = queue().length, pendingWithdrawals = db.withdrawals.filter(w=>w.status==="pending"), commissionEarned = db.commissionRecords.reduce((sum, record) => sum + Number(record.amount || 0), 0), rv = db.reviews;
-    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.png" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Administrator</small><h1>Administrator overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
+  admin: (a, u) => { const us = db.users.filter((x) => x.role !== "admin"), pend = queue().length, pendingWithdrawals = db.withdrawals.filter(w=>w.status==="pending"), commissionEarned = db.commissionRecords.reduce((sum, record) => sum + Number(record.amount || 0), 0), rv = db.reviews, damageAgreementEvents = (db.damageAgreementEvents || []).slice().sort((left, right) => Date.parse(right.acceptedAt) - Date.parse(left.acceptedAt)).slice(0, 30);
+    return [`<header class="hello admin-hello"><a href="index.html" class="hello-logo"><img src="logo.webp" alt="AgriRenta"></a><div class="hello-copy"><small class="role-kicker">Administrator</small><h1>Administrator overview</h1><p>Platform activity at a glance.</p></div><span class="pill">Administrator access</span></header>
     <section class="platform-global-search"><label class="sr-only" for="adminGlobalSearch">Search users, equipment, or locations</label><input id="adminGlobalSearch" class="searchbar" type="search" placeholder="Search users, equipment, or locations..." autocomplete="off"><div id="adminGlobalSearchResults">${platformSearchResults("", u)}</div></section>
     <a class="promo admin-banner" href="#/queue" aria-label="Open administrator review queue"><video autoplay muted loop playsinline preload="metadata" poster="images/adbanner.png" aria-hidden="true"><source src="adbanner.mp4" type="video/mp4"></video></a>
     <div class="grid stats"><a class="neu stat stat-link" href="#/users"><b>${us.length}</b>Registered users<small>View user accounts →</small></a><a class="neu stat stat-link" href="#/users"><b>${us.filter(isVerified).length}</b>ID verified<small>View verified users →</small></a><a class="neu stat stat-link" href="#/queue"><b>${pend}</b>Pending checks<small>Review submissions →</small></a><a class="neu stat stat-link" href="#/messages"><b>${rv.length ? (rv.reduce((s, x) => s + x.stars, 0) / rv.length).toFixed(1) : "–"}</b>Average rating<small>Open feedback →</small></a><a class="neu stat stat-link" href="#/commission"><b>${peso(commissionEarned)}</b>Commission (10% of eligible rentals)<small>View commission management →</small></a></div>
     ${serverApiEnabled ? `<section class="neu commission-panel"><h2>Move existing media to Supabase Storage</h2><p>Copies older profile pictures, ID images, equipment photos, and papers in small batches. Original data is replaced only after the Storage copy succeeds. Repeat until no eligible files remain.</p><form data-form="migratemedia"><button class="btn btn-primary">Migrate next batch (up to 3 files)</button></form><p id="mediaMigrationStatus" role="status"></p></section>` : ""}
+    <section class="neu"><h2>Damage agreement history</h2><p>Latest renter and owner acceptances. This history is separate from commission disputes.</p><div class="stack">${damageAgreementEvents.map((event) => { const renterAcceptance = event.eventType === "renter_accepted" ? event : damageAgreementEvents.find((record) => record.id === event.agreementEventId); return `<article class="neu"><b>${escapeHtml(event.eventType === "renter_accepted" ? "Renter accepted" : "Owner accepted")} · ${escapeHtml(event.bookingRef)}</b><p>${escapeHtml(usr(event.renter).name)} · renter / ${escapeHtml(usr(event.owner).name)} · owner</p><small>${escapeHtml(event.version)} · ${escapeHtml(new Date(event.acceptedAt).toLocaleString())}</small><p>${escapeHtml(renterAcceptance?.termsSnapshot || "Accepted terms snapshot unavailable.")}</p></article>`; }).join("") || "<p>No damage agreement acceptances recorded yet.</p>"}</div></section>
+    ${adminDamageCasesHtml()}
     <h2>Needs attention</h2><div class="stack"><a class="neu item card" href="#/queue"><span class="ico"><i class="bi bi-exclamation-circle" aria-hidden="true"></i></span><div><b>Identity checks waiting</b><p>${pend} submissions need review</p></div><b>Review</b></a></div>
     <div class="chips"><a class="chip" href="#/queue">Review verifications & equipment</a><a class="chip" href="#/users">Manage users</a></div><h2 style="margin-top:1.2rem">Cash-out requests</h2><div class="stack">${pendingWithdrawals.map(w=>`<div id="cashout-${escapeHtml(w.id)}" class="neu item"><div><b>${usr(w.owner).name} · ${peso(w.amount)}</b><p>${w.method} · ${w.accountName} · ${w.accountRef}</p><small>${new Date(w.createdAt).toLocaleString()}</small></div><button class="btn btn-primary btn-sm" data-act="withdrawpaid" data-v="${w.id}">Mark paid</button><button class="btn btn-soft btn-sm btn-danger" data-act="withdrawreject" data-v="${w.id}">Reject</button></div>`).join('')||'<p>No pending cash-out requests.</p>'}</div>`, "app"]; },
   queue: () => [`<h1>Verification queue</h1><p>Review account checks and uploaded equipment before approval.</p><div class="stack">${queue().map(x => x.eq
@@ -1353,6 +1493,23 @@ function notificationRecords(u) {
         description:`${usr(record.owner).name} disputed ${record.bookingRef}.`, href:`#/commission/commission-dispute-${encodeURIComponent(record.id)}`, time:record.disputedAt });
     }
   }
+  const damageReportsById = new Map((db.damageReports || []).map((report) => [report.id, report]));
+  for (const event of db.damageAuditEvents || []) {
+    const report = damageReportsById.get(event.reportId);
+    if (!report || event.actorEmail === u.email) continue;
+    if (u.role !== "admin" && report.ownerEmail !== u.email && report.renterEmail !== u.email) continue;
+    const title = u.role === "admin"
+      ? event.eventType === "damage_report_submitted" ? "Damage report needs review" : "Damage case updated"
+      : event.eventType === "damage_response_submitted" ? "New response to a damage report" : "Damage case updated";
+    rows.push({
+      id:`damage:${event.id}`,
+      tab:u.role === "admin" ? "admin" : u.role === "owner" ? "dashboard" : "bookings",
+      title,
+      description:`${event.eventType.replaceAll("_", " ")} · ${report.bookingRef}`,
+      href:`#/submitted/${encodeURIComponent(report.bookingRef)}`,
+      time:event.createdAt,
+    });
+  }
   return rows.sort((a,b) => new Date(b.time || 0) - new Date(a.time || 0));
 }
 
@@ -1450,11 +1607,16 @@ const TABS = {
   admin: [["admin", "Overview", '<i class="bi bi-speedometer2"></i>'], ["queue", "Verify", '<i class="bi bi-shield-check"></i>'], ["users", "Users", '<i class="bi bi-people"></i>'], ["alerts", "Alerts", '<i class="bi bi-bell"></i>'], ["messages", "Messages", '<i class="bi bi-chat-dots"></i>'], ["profile", "Profile", '<i class="bi bi-gear"></i>']],
   guest: [["explore", "Explore", '<i class="bi bi-search"></i>'], ["login", "Log in", '<i class="bi bi-box-arrow-in-right"></i>']]
 };
-const shell = (html, name, u) => `<div class="shell"><aside class="side"><a class="brand" href="index.html"><img src="logo.png" alt=""></a>
+const shell = (html, name, u) => `<div class="shell"><aside class="side"><a class="brand" href="index.html"><img src="logo.webp" alt=""></a>
   <nav class="nav">${TABS[u ? u.role : "guest"].map((t) => { const count = navNoticeCount(u,t[0]); return `<a href="#/${t[0]}" class="${name === t[0] ? "on" : ""}"><span class="nav-icon-wrap">${t[2]}${count ? `<i class="notification-badge" aria-label="${count} notifications">${count > 9 ? "9+" : count}</i>` : ""}</span>${t[1]}</a>`; }).join("")}</nav>
   <div class="foot">${u ? `<div class="account-mini">${avatar(u)}<div><small class="role-kicker-dark">${roleLabel(u)}</small><b>${u.name}</b><a href="#" data-act="logout"><i class="bi bi-box-arrow-right"></i> Log out</a></div></div>` : `<a href="#/register"><b>Create account</b></a>`}</div></aside><main class="main">${serverApiChecked && !serverApiEnabled ? `<div class="server-mode-warning" role="status"><b>Local-only mode:</b> changes are saved in this browser and will not appear in other accounts. Connect Supabase (see <code>supabase-config.js</code> and README.md) to share equipment and account data.</div>` : ""}${html}</main></div>`;
 
 function render() {
+  if (!serverApiChecked && db.me) {
+    document.body.classList.remove("auth");
+    app.innerHTML = '<main class="startup-loading" role="status" aria-live="polite">Loading your account...</main>';
+    return;
+  }
   const [, name = "", arg, detailArg] = location.hash.slice(1).split("/"), u = me();
   const pub = ["welcome", "login", "register", "forgot", "reset-password", "verify-email", "explore", "equipment", "owner", "member"];
   if (u && rolePending && name !== "choose-role") return go("#/choose-role");
@@ -1468,6 +1630,7 @@ function render() {
   if (u && ownerOnly.includes(name) && u.role !== "owner") return go(homeOf(u));
   const [html, mode] = V[name](arg, u, detailArg);
   document.body.classList.toggle("auth", mode === "auth");
+  updateAuthBackgroundVideo(mode);
   app.innerHTML = mode === "auth" ? html : shell(html, name, u);
   app.querySelectorAll("img").forEach((image) => {
     if (!image.hasAttribute("loading")) image.loading = "lazy";
@@ -1509,11 +1672,34 @@ function render() {
     updatePaymentFields();
   }
 }
+function updateAuthBackgroundVideo(mode) {
+  const video = document.querySelector(".bg-video");
+  if (!video || !video.dataset.src) return;
+  window.clearTimeout(backgroundVideoTimer);
+  if (mode === "auth") {
+    if (!serverApiChecked) return;
+    if (!video.hasAttribute("src")) {
+      backgroundVideoTimer = window.setTimeout(() => {
+        if (document.body.classList.contains("auth") && video.isConnected) video.src = video.dataset.src;
+      }, 900);
+    }
+    return;
+  }
+  if (video.hasAttribute("src")) {
+    video.pause();
+    video.removeAttribute("src");
+    video.load();
+  }
+}
 window.addEventListener("hashchange", render);
 
 /* ---------- Actions ---------- */
 const rerender = () => { const y = scrollY; render(); scrollTo(0, y); };
 document.addEventListener("click", async (e) => {
+  if (!serverApiChecked && e.target.closest("button, a, [data-act], input[type='submit']")) {
+    e.preventDefault();
+    return;
+  }
   const passwordToggle = e.target.closest("[data-password-toggle]");
   if (passwordToggle) {
     e.preventDefault();
@@ -1645,8 +1831,10 @@ document.addEventListener("click", async (e) => {
   else if (["approve", "decline", "returned"].includes(a)) {
     if (!b || u?.role !== "owner" || b.owner !== u.email) return toast("Only the equipment owner can update this booking.");
     if (a === "decline" && b.pay === "GCash") return toast("GCash rental requests cannot be declined. Please accept the request or contact the renter.");
+    if (a === "approve" && b.damageAgreementRequired && !bookingDamageAgreementEvents(b.ref).some((event) => event.eventType === "renter_accepted" && event.version === b.damageAgreementVersion)) return toast("The renter's damage agreement confirmation is missing. Do not approve this booking until it is corrected.");
     b.status = a === "approve" ? "approved" : a === "decline" ? "declined" : "returned";
     b.statusUpdatedAt = new Date().toISOString();
+    if (a === "approve" && b.damageAgreementRequired && !serverApiEnabled) recordLocalDamageAgreementAcceptance(b, "owner_accepted");
     if (!await save()) return;
     if (serverApiEnabled) {
       try { await refreshServerState(); }
@@ -1716,8 +1904,55 @@ async function refreshServerState() {
   if (!response.ok || !result.ok) throw new Error(result.error || "Could not refresh AgriRenta data.");
   applyApiState(result.state);
 }
+async function uploadDamageEvidence(form, bookingRef) {
+  const files = [...(form.querySelector('input[name="evidence"]')?.files || [])];
+  if (files.length > 5) throw new Error("Choose no more than five evidence files.");
+  if (!files.length) return [];
+  if (!serverApiEnabled || !window.agrirentaStorage?.upload) {
+    throw new Error("Private damage evidence requires the connected AgriRenta Storage API.");
+  }
+  const allowedTypes = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
+  for (const file of files) {
+    if (!allowedTypes.has(file.type) || file.size < 1 || file.size > 10 * 1024 * 1024) {
+      throw new Error("Evidence must be a JPEG, PNG, WebP, or PDF file no larger than 10 MB.");
+    }
+  }
+  const uploadedFiles = [];
+  for (const file of files) {
+    const upload = await window.agrirentaStorage.upload(file, "damage-evidence", { bookingRef });
+    uploadedFiles.push({
+      reference:upload.reference,
+      fileName:file.name,
+      contentType:file.type,
+      size:file.size,
+    });
+  }
+  return uploadedFiles;
+}
+async function postDamageAction(path, form, payload, successMessage) {
+  if (!serverApiEnabled) return toast("Damage support requires a connected Supabase backend.");
+  try {
+    const uploadedFiles = await uploadDamageEvidence(form, form.dataset.bookingRef || "");
+    payload.evidenceRefs = uploadedFiles.map((file) => file.reference);
+    payload.evidenceMetadata = uploadedFiles;
+    const response = await fetch(path, {
+      method:"POST",
+      credentials:"same-origin",
+      headers:{"Content-Type":"application/json"},
+      body:JSON.stringify(payload),
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) return toast(result.error || "Could not save this damage-support action.");
+    applyApiState(result.state);
+    toast(successMessage);
+    rerender();
+  } catch (error) {
+    toast(error.message || "Could not reach AgriRenta damage support.");
+  }
+}
 document.addEventListener("submit", async (e) => {
   const f = e.target.closest("form[data-form]"); if (!f) return; e.preventDefault();
+  if (!serverApiChecked) return;
   const d = Object.fromEntries(new FormData(f)), k = f.dataset.form, u = me();
   if (e.submitter?.name) d[e.submitter.name] = e.submitter.value;
   if (k === "forgot") {
@@ -1846,6 +2081,32 @@ document.addEventListener("submit", async (e) => {
       toast("Profile picture saved to your AgriRenta account.");
       rerender();
     } catch (err) { toast(err.message || "Could not save that profile picture."); }
+  } else if (k === "damage-report") {
+    if (!u || !["customer", "owner"].includes(u.role)) return toast("Only the booking owner or renter can submit a damage report.");
+    await postDamageAction("/api/damage/report", f, {
+      bookingRef:f.dataset.bookingRef,
+      title:String(d.title || "").trim(),
+      category:String(d.category || ""),
+      incidentDate:String(d.incidentDate || ""),
+      description:String(d.description || "").trim(),
+    }, "Damage report submitted. The other booking participant can respond, and an administrator will review it.");
+  } else if (k === "damage-response") {
+    if (!u || !["customer", "owner"].includes(u.role)) return toast("Only the booking owner or renter can respond to a damage report.");
+    await postDamageAction("/api/damage/response", f, {
+      reportId:f.dataset.reportId,
+      message:String(d.message || "").trim(),
+    }, "Your response was added to the damage case.");
+  } else if (k === "admin-damage-review") {
+    if (!u || u.role !== "admin") return toast("Only an administrator can review damage cases.");
+    await postDamageAction("/api/admin/damage-review", f, {
+      reportId:f.dataset.reportId,
+      status:String(d.status || ""),
+      responsibility:String(d.responsibility || ""),
+      repairCost:String(d.repairCost || ""),
+      decisionSummary:String(d.decisionSummary || "").trim(),
+      investigationNote:String(d.investigationNote || "").trim(),
+      noteVisibility:String(d.noteVisibility || "admin"),
+    }, "Damage investigation update saved. No payment or deduction was made.");
   } else if (k === "commissionpayment") {
     if (!u || u.role !== "owner") return toast("Only equipment owners can submit commission payments.");
     const amount = Number(d.amount), reference = String(d.reference || "").trim();
@@ -2117,14 +2378,24 @@ document.addEventListener("submit", async (e) => {
     const e2 = E(draft.eq), days = Math.max(1, Math.round((new Date(draft.end) - new Date(draft.start)) / 864e5));
     const ref = "AR-" + new Date().getFullYear() + "-" + String(Date.now()).slice(-7);
     const gcashDemo = d.pay === "GCash";
+    if (d.termsAccepted !== "yes") return toast("Please confirm that you reviewed the rental terms.");
+    if (d.damageTermsAccepted !== "yes") return toast("Please read and accept the equipment damage agreement before submitting.");
     if (!d.pay) return toast("Please choose a payment method.");
     if (!e2 || (e2.status && e2.status !== "approved")) return toast("This equipment is not approved for booking yet.");
-    const booking = { ref, eq: e2.id, equipmentName: e2.name, renter: u.email, owner: e2.owner, start: draft.start, end: draft.end, days, total: Number(e2.price) * days, status: "pending", delivery: draft.delivery, addr: draft.addr, pay: d.pay, paymentStatus: gcashDemo ? "awaiting_payment_demo" : "pay_on_delivery", createdAt: new Date().toISOString() };
+    const booking = { ref, eq: e2.id, equipmentName: e2.name, renter: u.email, owner: e2.owner, start: draft.start, end: draft.end, days, total: Number(e2.price) * days, status: "pending", delivery: draft.delivery, addr: draft.addr, pay: d.pay, paymentStatus: gcashDemo ? "awaiting_payment_demo" : "pay_on_delivery", createdAt: new Date().toISOString(), damageAgreementRequired: true, damageAgreementVersion: DAMAGE_AGREEMENT_VERSION, damageAgreement: { version: DAMAGE_AGREEMENT_VERSION, renterAccepted: true } };
     // Payment selection changes payment fields/status only; equipment and rental dates are not modified.
-    db.bookings.push(booking); save(); draft = null;
+    if (!serverApiEnabled) {
+      delete booking.damageAgreement;
+      recordLocalDamageAgreementAcceptance(booking, "renter_accepted");
+    }
+    db.bookings.push(booking); draft = null;
+    if (!await save()) return;
+    if (serverApiEnabled) {
+      try { await refreshServerState(); }
+      catch (err) { toast(`Booking saved, but its agreement record could not refresh: ${err.message}`); return; }
+    }
     if (gcashDemo) {
       try {
-        await persistState();
         const paymentUrl = new URL("custormerggcash.html", location.href);
         paymentUrl.searchParams.set("reference", ref);
         paymentUrl.searchParams.set("amount", String(booking.total));
@@ -2144,10 +2415,10 @@ document.addEventListener("submit", async (e) => {
         return;
       } catch (err) {
         toast(err.message || "Could not save the booking. Please try again.");
-        go("#/submitted/" + ref); return;
+        return;
       }
     }
-    save(); go("#/submitted/" + ref);
+    go("#/submitted/" + ref);
   } else if (k === "review") {
     const b = db.bookings.find((x) => x.ref === f.dataset.ref), owner = u.role === "owner";
     if (!b || b.status !== "returned" || (owner ? b.owner !== u.email : b.renter !== u.email)) return toast("Only a participant in a returned rental can submit this review.");
@@ -2161,6 +2432,7 @@ document.addEventListener("submit", async (e) => {
   else if (k === "blockdates") { if (d.end < d.start) return toast("End date must be on or after the start date."); const owns = db.eq.some((x) => String(x.id) === String(d.eq) && x.owner === u.email); if (!owns) return toast("Choose your own equipment."); const conflict = db.availability.some((x) => String(x.eq) === String(d.eq) && d.start <= x.end && d.end >= x.start); if (conflict) return toast("These dates overlap an existing blocked period."); db.availability.push({ id: Date.now(), eq: Number(d.eq), owner: u.email, start: d.start, end: d.end, reason: d.reason || "" }); save(); toast("Unavailable dates saved."); rerender(); }
 });
 async function initAgriRenta() {
+  render();
   try {
     const changed = await migrateLocalPasswords(db);
     if (changed) localStorage.setItem("agri", JSON.stringify(db));
